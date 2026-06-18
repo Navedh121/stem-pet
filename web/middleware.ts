@@ -1,59 +1,41 @@
-// Next.js middleware — runs on every request before the page renders.
-// We use it to:
-//   1. Refresh the Supabase session cookie so it doesn't expire mid-session.
-//   2. Redirect unauthenticated users away from /dashboard/* to /login.
-//   3. Redirect already-logged-in users away from /login and /signup to /dashboard.
+// Next.js middleware — runs on the Edge Runtime before every matched request.
+//
+// We keep this intentionally thin: just check whether the Supabase auth
+// cookie is present and redirect accordingly.  We do NOT import @supabase/ssr
+// here because that package pulls in @supabase/supabase-js which uses
+// Node.js APIs (process.version) incompatible with the Edge Runtime.
+//
+// Security note: this cookie check is only for routing (UX).  Real session
+// validation happens server-side inside each dashboard Server Component via
+// supabase.auth.getUser(), so there is no security regression.
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  });
+// Supabase stores the session in a cookie whose name matches this pattern:
+//   sb-<project-ref>-auth-token
+// Checking for its existence is enough to know if a user is logged in.
+function isAuthenticated(request: NextRequest): boolean {
+  return request.cookies.getAll().some((c) => c.name.includes("-auth-token"));
+}
 
-  // Build a Supabase client that can read and set cookies via the response.
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          // Update both the request and response cookies.
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  // Refresh the session (this also rotates the cookie if needed).
-  const { data: { user } } = await supabase.auth.getUser();
-
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const loggedIn = isAuthenticated(request);
 
-  // Protected routes — redirect to login if not signed in.
-  if (pathname.startsWith("/dashboard") && !user) {
+  // Redirect unauthenticated users away from protected routes.
+  if (pathname.startsWith("/dashboard") && !loggedIn) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Auth pages — redirect to dashboard if already signed in.
-  if ((pathname === "/login" || pathname === "/signup") && user) {
+  // Redirect already-logged-in users away from auth pages.
+  if ((pathname === "/login" || pathname === "/signup") && loggedIn) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  return response;
+  return NextResponse.next();
 }
 
-// Only run middleware on these paths (not on static files or API routes).
+// Only run on these paths — static files and API routes are excluded.
 export const config = {
   matcher: ["/dashboard/:path*", "/login", "/signup"],
 };
