@@ -1,0 +1,100 @@
+/* ================================================================
+   STEMPet — Global styles
+   Tailwind base layers + design token CSS variables + font imports.
+   ================================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Font imports ────────────────────────────────────────────────
+   Clash Display and Satoshi come from Fontshare (free, no signup).
+   Geist Mono comes from Vercel's CDN via a stylesheet import.     */
+
+/* Fontshare fonts */
+@import url("https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=satoshi@400,500,700&display=swap");
+
+/* Geist Mono — Vercel's monospace for numbers and data displays */
+@import url("https://cdn.jsdelivr.net/npm/geist@1/dist/fonts/geist-mono/style.css");
+
+/* ── CSS custom properties (design tokens) ──────────────────────
+   These mirror the Tailwind config so you can use them in plain
+   CSS as well as in Tailwind classes.                            */
+:root {
+  --ink:        #0A0E1A;
+  --surface:    #141A2E;
+  --spider-red: #E11D2A;
+  --web-blue:   #1E6BFF;
+  --silk:       #AEB9D4;
+  --paper:      #F4F6FB;
+  --muted:      #7C879E;
+
+  --card-border: rgba(174, 185, 212, 0.12);
+}
+
+/* ── Base styles ────────────────────────────────────────────────
+   Dark-first: the page background is always --ink.              */
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--ink);
+    color: var(--paper);
+    font-family: 'Satoshi', sans-serif;
+    line-height: 1.6;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+  }
+
+  /* Heading tags use the display font */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Clash Display', sans-serif;
+  }
+
+  /* Keep focus rings visible for keyboard users (WCAG AA) */
+  *:focus-visible {
+    outline: 2px solid var(--web-blue);
+    outline-offset: 2px;
+  }
+
+  /* Disable non-essential animations for users who ask for it */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ── Utility layer additions ────────────────────────────────────*/
+@layer utilities {
+  /* Card base style — applied to all dashboard cards */
+  .card {
+    background-color: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: 1rem;
+    box-shadow: inset 0 1px 0 rgba(174, 185, 212, 0.08);
+  }
+
+  /* Mono numbers — applies Geist Mono with tabular number features */
+  .mono {
+    font-family: 'Geist Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Silk text — muted secondary color */
+  .text-silk { color: var(--silk); }
+  .text-muted { color: var(--muted); }
+
+  /* Glowing border effect on hover (cards, nodes) */
+  .glow-blue:hover {
+    box-shadow: 0 0 16px rgba(30, 107, 255, 0.35);
+  }
+  .glow-red:hover {
+    box-shadow: 0 0 16px rgba(225, 29, 42, 0.35);
+  }
+}
