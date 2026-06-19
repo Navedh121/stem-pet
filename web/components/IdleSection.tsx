@@ -31,13 +31,17 @@ export default function IdleSection() {
        overflow-hidden would clip that top edge. py-32 gives plenty of breathing
        room without any clipping risk.                                          */
     <section className="relative py-32">
-      {/* Faint icy radial glow — makes the robot feel lit from within */}
+      {/* Blue atmospheric glow centred behind the robot.
+          Mirrors the hero's red glow (same opacity, same ellipse approach) —
+          robot sits in the lower ~65% of the section, so the gradient is
+          anchored there.  #1E6BFF at 17% opacity → deep royal blue that
+          fades cleanly to the dark background.                               */}
       <div
         className="absolute inset-0 pointer-events-none"
         aria-hidden="true"
         style={{
           background:
-            "radial-gradient(ellipse 55% 50% at 50% 52%, rgba(155,197,255,0.04) 0%, transparent 70%)",
+            "radial-gradient(ellipse 65% 60% at 50% 68%, rgba(30,107,255,0.17) 0%, transparent 70%)",
         }}
       />
 
