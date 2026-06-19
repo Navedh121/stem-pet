@@ -27,7 +27,7 @@ export default function RootLayout({
     // Font class names are handled by globals.css @import, so no
     // next/font/google is needed here.
     <html lang="en" className="dark">
-      <body className="bg-ink text-paper antialiased">
+      <body className="bg-ink text-paper antialiased" suppressHydrationWarning>
         {children}
       </body>
     </html>
