@@ -30,7 +30,7 @@ export default function HeroSection() {
       };
 
   return (
-    <section className="relative min-h-screen flex flex-col lg:flex-row overflow-hidden">
+    <section className="relative min-h-screen flex flex-col lg:flex-row">
 
       {/* ── Background ── */}
       <div className="absolute inset-0 bg-ink" aria-hidden="true" />
@@ -99,11 +99,12 @@ export default function HeroSection() {
         </motion.div>
       </div>
 
-      {/* ── Right column: robot anchored to the TOP-RIGHT corner ──
-           items-start keeps the image flush with the top of the section.
-           No padding-bottom so no empty gap below. The image's natural
-           aspect ratio + max constraints keep the full robot visible.     */}
-      <div className="relative z-10 flex-1 flex items-start justify-center lg:justify-end">
+      {/* ── Right column: robot at center-right ──
+           items-center moves it DOWN from the top-right corner.
+           justify-end + pr keeps it on the right side but off the edge.
+           The image is larger (maxWidth ~56 vw) so the web strands that
+           trail to the side have room and don't end at a visible hard edge. */}
+      <div className="relative z-10 flex-1 flex items-center justify-center lg:justify-end lg:pr-10">
         <motion.div
           {...(shouldReduceMotion
             ? {}
@@ -114,24 +115,17 @@ export default function HeroSection() {
               })}
         >
           <motion.div {...floatProps}>
-            {/*
-              Width/height props tell Next.js the intrinsic dimensions for
-              image optimization. The style overrides make it responsive:
-              width: 100% fills the column; height: auto keeps aspect ratio;
-              max-width caps it on large screens; max-height prevents the
-              image overflowing the viewport vertically.
-            */}
             <Image
               src="/mathbot-hero.png"
-              alt="MathBot robot leaping and firing web strands"
+              alt="MathBot robot with web strands trailing to the side"
               width={1888}
               height={2270}
               priority
               style={{
                 width: "100%",
                 height: "auto",
-                maxWidth: "clamp(320px, 48vw, 680px)",
-                maxHeight: "100vh",
+                maxWidth: "clamp(380px, 56vw, 760px)",
+                maxHeight: "92vh",
                 objectFit: "contain",
                 display: "block",
               }}
