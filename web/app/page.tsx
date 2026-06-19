@@ -51,7 +51,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           §2  HOW IT WORKS
          ══════════════════════════════════════════════════════ */}
-      <AnimatedSection className="px-6 py-28 max-w-5xl mx-auto">
+      <AnimatedSection className="px-6 py-36 max-w-5xl mx-auto">
         <p className="text-silk text-xs uppercase tracking-widest mb-3">How it works</p>
         <h2 className="font-display text-4xl sm:text-5xl text-paper mb-14">
           Three honest steps.
@@ -135,7 +135,7 @@ export default function LandingPage() {
               Generous gap above so the robot hangs clearly
               between the two sections.
          ══════════════════════════════════════════════════════ */}
-      <div className="pt-28">
+      <div className="pt-36">
         <HangSection />
       </div>
 
