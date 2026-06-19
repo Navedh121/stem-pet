@@ -194,11 +194,14 @@ export default function WebOfProgress({
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
             />
-            {/* Visible node */}
+            {/* Visible node.
+                Do NOT also set r={} as a direct prop — Framer Motion
+                owns `r` via initial/animate; a competing direct prop
+                causes a server/client hydration mismatch (server sees
+                r=4, client's initial override is r=0).                */}
             <motion.circle
               cx={a.masteryX}
               cy={a.masteryY}
-              r={hoveredIndex === i ? 6 : 4}
               fill={hoveredIndex === i ? "#1E6BFF" : "#AEB9D4"}
               filter={hoveredIndex === i ? "url(#glow)" : undefined}
               initial={{ r: 0 }}

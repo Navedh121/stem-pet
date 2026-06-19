@@ -2,9 +2,9 @@
 // Sections:
 //   1. Hero        — robot + wordmark + CTA (HeroSection)
 //   2. How it works — 3 honest steps
-//   3. Meet MathBot — idle robot with tendrils (IdleSection)
-//   4. Dashboard    — Web of Progress + stat cards (moved from hero)
-//   5. Web-cradled cards — hanging robot + feature cards (HangSection)
+//   3. Meet MathBot — idle robot (IdleSection)
+//   4. Dashboard   — Web of Progress + stat cards
+//   5. Why it matters — 3 feature cards (HangSection)
 //   6. Footer
 
 import Link from "next/link";
@@ -131,13 +131,9 @@ export default function LandingPage() {
       </AnimatedSection>
 
       {/* ══════════════════════════════════════════════════════
-          §5  HANGING ROBOT + WEB-CRADLED FEATURE CARDS
-              Generous gap above so the robot hangs clearly
-              between the two sections.
+          §5  FEATURE CARDS — why MathBot works
          ══════════════════════════════════════════════════════ */}
-      <div className="pt-36">
-        <HangSection />
-      </div>
+      <HangSection />
 
       {/* Footer */}
       <Footer />

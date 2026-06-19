@@ -1,9 +1,9 @@
 "use client";
 
 // Hero section — MathBot landing page.
-// Transparent robot PNG floats on the section's own dark gradient.
-// The robot's own rendered web (firing from its hand) is the only web here —
-// no extra SVG strands are drawn. A gentle float/bob keeps the robot alive.
+// Robot PNG is transparent and anchored to the TOP-RIGHT of its column,
+// reading as leaping in from the top corner. No code-drawn SVG webs.
+// The robot's own rendered web strands are the only web in this section.
 
 import { useReducedMotion, motion } from "framer-motion";
 import Link from "next/link";
@@ -21,35 +21,35 @@ export default function HeroSection() {
           transition: { duration: 0.6, delay, ease: "easeOut" },
         };
 
-  // Gentle vertical float for the robot image
+  // Gentle float — the only animation on the robot
   const floatProps = shouldReduceMotion
     ? {}
     : {
-        animate: { y: [0, -14, 0] },
+        animate: { y: [0, -12, 0] },
         transition: { duration: 5, repeat: Infinity, ease: "easeInOut" },
       };
 
   return (
     <section className="relative min-h-screen flex flex-col lg:flex-row overflow-hidden">
 
-      {/* ── Background: page's own gradient — robot PNG is fully transparent ── */}
+      {/* ── Background ── */}
       <div className="absolute inset-0 bg-ink" aria-hidden="true" />
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: "linear-gradient(108deg, #0A0E1A 0%, #0A0E1A 42%, #1b0309 100%)" }}
         aria-hidden="true"
       />
-      {/* Deep crimson atmospheric glow, right side */}
+      {/* Crimson atmospheric glow, right side */}
       <div
         className="absolute right-0 top-0 h-full w-2/3 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 65% 75% at 90% 55%, rgba(225,29,42,0.16) 0%, transparent 70%)",
+            "radial-gradient(ellipse 65% 75% at 90% 50%, rgba(225,29,42,0.17) 0%, transparent 70%)",
         }}
         aria-hidden="true"
       />
 
-      {/* ── Left column: text ── */}
+      {/* ── Left column: text, vertically centred ── */}
       <div className="relative z-10 flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-20 pt-28 pb-12 lg:py-0">
         <motion.span
           className="inline-flex items-center gap-2 bg-surface border border-silk/15 rounded-full px-4 py-1.5 text-xs text-silk mb-8 w-fit"
@@ -99,22 +99,28 @@ export default function HeroSection() {
         </motion.div>
       </div>
 
-      {/* ── Right column: robot, fully visible, no cropping ──
-           Use natural image sizing (not fill) so the full portrait image
-           fits within the available space without legs being cut off.       */}
-      <div className="relative z-10 flex-1 flex items-center justify-center lg:items-end lg:justify-end px-4 pb-8 lg:pb-0 lg:pr-0">
+      {/* ── Right column: robot anchored to the TOP-RIGHT corner ──
+           items-start keeps the image flush with the top of the section.
+           No padding-bottom so no empty gap below. The image's natural
+           aspect ratio + max constraints keep the full robot visible.     */}
+      <div className="relative z-10 flex-1 flex items-start justify-center lg:justify-end">
         <motion.div
-          className="w-full flex justify-center lg:justify-end"
           {...(shouldReduceMotion
             ? {}
             : {
-                initial: { opacity: 0, x: 24 },
+                initial: { opacity: 0, x: 30 },
                 animate: { opacity: 1, x: 0 },
-                transition: { duration: 0.8, delay: 0.25, ease: "easeOut" },
+                transition: { duration: 0.8, delay: 0.2, ease: "easeOut" },
               })}
         >
-          {/* Float wrapper — applied around the whole image so the robot bobs */}
           <motion.div {...floatProps}>
+            {/*
+              Width/height props tell Next.js the intrinsic dimensions for
+              image optimization. The style overrides make it responsive:
+              width: 100% fills the column; height: auto keeps aspect ratio;
+              max-width caps it on large screens; max-height prevents the
+              image overflowing the viewport vertically.
+            */}
             <Image
               src="/mathbot-hero.png"
               alt="MathBot robot leaping and firing web strands"
@@ -122,11 +128,12 @@ export default function HeroSection() {
               height={2270}
               priority
               style={{
-                width: "auto",
+                width: "100%",
                 height: "auto",
-                maxWidth: "min(100%, 560px)",
-                maxHeight: "88vh",
+                maxWidth: "clamp(320px, 48vw, 680px)",
+                maxHeight: "100vh",
                 objectFit: "contain",
+                display: "block",
               }}
             />
           </motion.div>

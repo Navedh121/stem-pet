@@ -2,8 +2,8 @@
 
 // "Meet MathBot" idle section.
 // Transparent robot PNG floats directly on the dark section background.
-// No SVG tendrils — the image already has its own rendered web detail.
-// The robot bobs gently up-down and tilts slightly left-right.
+// No SVG tendrils. The robot bobs gently and tilts — no overflow-hidden on
+// the section so the bob animation never gets clipped at the boundaries.
 // Respects prefers-reduced-motion.
 
 import { useReducedMotion, motion } from "framer-motion";
@@ -27,7 +27,10 @@ export default function IdleSection() {
       };
 
   return (
-    <section className="relative py-40 overflow-hidden">
+    /* No overflow-hidden — the bob animation moves the image up to -16px and
+       overflow-hidden would clip that top edge. py-32 gives plenty of breathing
+       room without any clipping risk.                                          */
+    <section className="relative py-32">
       {/* Faint icy radial glow — makes the robot feel lit from within */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -43,30 +46,36 @@ export default function IdleSection() {
         <h2 className="font-display text-4xl sm:text-5xl text-paper mb-4 leading-tight">
           Your child&apos;s math companion.
         </h2>
-        <p className="text-silk max-w-sm leading-relaxed mb-20">
+        <p className="text-silk max-w-sm leading-relaxed mb-16">
           A physical toy that never stops learning what your child needs next.
         </p>
 
-        {/* Bob wrapper (outer) — tilt wrapper (inner) — image */}
+        {/* Bob wrapper (outer) — tilt wrapper (inner) — image.
+            The wrapper div caps the image width; width: 100% + height: auto
+            inside it is the reliable Next.js responsive-image pattern that
+            maintains the correct aspect ratio and shows the full PNG with no
+            cropping.                                                          */}
         <motion.div {...bobProps}>
           <motion.div {...tiltProps}>
-            <Image
-              src="/mathbot-idle.png"
-              alt="MathBot robot standing, looking around"
-              width={1888}
-              height={2270}
-              style={{
-                width: "auto",
-                height: "auto",
-                maxWidth: "min(100%, 400px)",
-                maxHeight: "70vh",
-                objectFit: "contain",
-                // Soft shadow anchors the robot to the dark background
-                filter: "drop-shadow(0 32px 64px rgba(0,0,0,0.65))",
-              }}
-            />
+            <div style={{ width: "min(100vw - 3rem, 380px)" }}>
+              <Image
+                src="/mathbot-idle.png"
+                alt="MathBot robot standing, looking around"
+                width={1888}
+                height={2270}
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                  filter: "drop-shadow(0 32px 64px rgba(0,0,0,0.65))",
+                }}
+              />
+            </div>
           </motion.div>
         </motion.div>
+
+        {/* Breathing room below the robot before the next section */}
+        <div className="mt-16" />
       </div>
     </section>
   );
