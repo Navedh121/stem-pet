@@ -44,8 +44,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo / Brand */}
         <div className="text-center mb-8">
-          <span className="font-display text-3xl text-paper">STEM</span>
-          <span className="font-display text-3xl text-spider-red">Pet</span>
+          <span className="font-display font-bold text-3xl text-paper" style={{ WebkitTextStroke: "1.5px #E11D2A" }}>STEM</span>
+          <span className="font-display font-bold text-3xl text-spider-red">Pet</span>
           <p className="text-muted text-sm mt-1">Parent portal</p>
         </div>
 
