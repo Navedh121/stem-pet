@@ -122,9 +122,8 @@ export default function HeroSection() {
               height={2270}
               priority
               style={{
-                width: "100%",
+                width: "clamp(570px, 84vw, 1140px)",
                 height: "auto",
-                maxWidth: "clamp(380px, 56vw, 760px)",
                 maxHeight: "92vh",
                 objectFit: "contain",
                 display: "block",
