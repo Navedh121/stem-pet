@@ -57,7 +57,13 @@ export default function LinkDevicePage() {
     });
 
     if (insertErr) {
-      setError(insertErr.message);
+      // Postgres unique_violation (23505) means the code is already taken by
+      // another account — RLS hid it from the pre-check SELECT above.
+      if ((insertErr as { code?: string }).code === "23505") {
+        setError("That device code is already linked to another account. Double-check the code on your toy.");
+      } else {
+        setError(insertErr.message);
+      }
       setLoading(false);
       return;
     }
