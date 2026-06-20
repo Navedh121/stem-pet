@@ -9,6 +9,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserClient } from "@/lib/supabase";
 
+// NOTE: If Supabase has "Confirm email" enabled in Auth settings, signUp()
+// returns a user object but NO active session (session: null). We detect this
+// and show a "check your email" state instead of blindly pushing to /dashboard
+// (which would just redirect back to /login because no session cookie exists).
+
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -16,6 +21,7 @@ export default function SignupPage() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,7 +38,7 @@ export default function SignupPage() {
 
     setLoading(true);
     const supabase = createBrowserClient();
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -47,11 +53,46 @@ export default function SignupPage() {
       return;
     }
 
-    // Supabase sends a confirmation email.
-    // We immediately redirect to dashboard — if email confirmation is
-    // required in your Supabase settings, they'll be asked to confirm first.
-    router.push("/dashboard");
-    router.refresh();
+    if (data.session) {
+      // Email confirmation is disabled — user has an active session immediately.
+      // Navigate to the dashboard now.
+      router.push("/dashboard");
+      router.refresh();
+    } else {
+      // Email confirmation is enabled — session is null until the user clicks
+      // the link in their inbox. Show a prompt instead of pushing to /dashboard
+      // (which would redirect straight back to /login because no cookie exists).
+      setCheckEmail(true);
+      setLoading(false);
+    }
+  }
+
+  // Show after signUp() when email confirmation is required.
+  if (checkEmail) {
+    return (
+      <main className="min-h-screen bg-ink flex items-center justify-center p-4">
+        <div className="w-full max-w-sm text-center">
+          <div className="text-center mb-8">
+            <span className="font-display text-3xl text-paper">STEM</span>
+            <span className="font-display text-3xl text-spider-red">Pet</span>
+          </div>
+          <div className="card p-8 space-y-4">
+            <p className="text-2xl">📬</p>
+            <h1 className="font-display text-h3 text-paper">Check your email</h1>
+            <p className="text-silk text-sm leading-relaxed">
+              We sent a confirmation link to <strong className="text-paper">{email}</strong>.
+              Click it to activate your account, then come back and sign in.
+            </p>
+            <Link
+              href="/login"
+              className="block w-full text-center bg-spider-red hover:bg-spider-red/90 text-white font-medium py-2.5 rounded-lg transition-colors"
+            >
+              Go to sign in
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (

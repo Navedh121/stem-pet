@@ -20,22 +20,25 @@ function isAuthenticated(request: NextRequest): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const loggedIn = isAuthenticated(request);
 
-  // Redirect unauthenticated users away from protected routes.
-  if (pathname.startsWith("/dashboard") && !loggedIn) {
+  // Block unauthenticated access to the dashboard and redirect to login.
+  //
+  // We intentionally do NOT redirect logged-in users away from /login or
+  // /signup. The old rule (`if loggedIn && on /login → redirect /dashboard`)
+  // caused an infinite loop: when a session cookie existed but the JWT was
+  // expired, the middleware kept sending the user to /dashboard, the layout's
+  // getUser() returned null and redirected back to /login, the middleware
+  // sent them to /dashboard again, and so on. Removing this rule breaks the
+  // cycle. After a successful login, router.push("/dashboard") in the login
+  // page handles the forward navigation — no middleware redirect needed.
+  if (pathname.startsWith("/dashboard") && !isAuthenticated(request)) {
     return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // Redirect already-logged-in users away from auth pages.
-  if ((pathname === "/login" || pathname === "/signup") && loggedIn) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
 }
 
-// Only run on these paths — static files and API routes are excluded.
+// Only protect dashboard routes — login/signup are intentionally unmatched.
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup"],
+  matcher: ["/dashboard/:path*"],
 };
