@@ -40,8 +40,8 @@ export default async function DashboardLayout({
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-1 flex-shrink-0">
-            <span className="font-display text-xl text-paper">STEM</span>
-            <span className="font-display text-xl text-spider-red">Pet</span>
+            <span className="font-display font-bold text-xl text-paper">STEM</span>
+            <span className="font-display font-bold text-xl text-spider-red">Pet</span>
           </Link>
 
           {/* Child selector + actions */}
