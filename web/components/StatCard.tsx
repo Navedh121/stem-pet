@@ -69,9 +69,10 @@ export default function StatCard({
         )}
       </div>
 
-      {delta !== null && (
-        <p className={`text-xs mt-1.5 ${delta >= 0 ? "text-web-blue" : "text-spider-red"}`}>
-          {delta >= 0 ? "↑" : "↓"} {Math.abs(delta)}
+      {/* Only show delta when it's non-zero — "↑ 0% vs last week" is noise */}
+      {delta !== null && delta !== 0 && (
+        <p className={`text-xs mt-1.5 ${delta > 0 ? "text-web-blue" : "text-spider-red"}`}>
+          {delta > 0 ? "↑" : "↓"} {Math.abs(delta)}
           {unit} {deltaLabel}
         </p>
       )}

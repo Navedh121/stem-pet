@@ -1,11 +1,13 @@
 // MathBot public landing page.
 // Sections:
 //   1. Hero        — robot + wordmark + CTA (HeroSection)
-//   2. How it works — 3 honest steps
-//   3. Meet MathBot — idle robot (IdleSection)
-//   4. Dashboard   — Web of Progress + stat cards
-//   5. Why it matters — 3 feature cards (HangSection)
-//   6. Footer
+//   2. Problem     — pain point before the solution
+//   3. How it works — 3 labeled truths (The toy / The AI / The parent)
+//   4. Meet MathBot — idle robot (IdleSection)
+//   5. Dashboard   — Web of Progress + stat cards
+//   6. Why it matters — 3 feature cards (HangSection)
+//   7. Footer
+//   +  StickyMobileCTA — slides up on scroll for mobile users
 
 import Link from "next/link";
 import WebOfProgress, { SAMPLE_MASTERY } from "@/components/WebOfProgress";
@@ -14,20 +16,24 @@ import Footer from "@/components/Footer";
 import HeroSection from "@/components/HeroSection";
 import IdleSection from "@/components/IdleSection";
 import HangSection from "@/components/HangSection";
+import StickyMobileCTA from "@/components/StickyMobileCTA";
 
+// Step labels changed from 01/02/03 numbering to descriptive labels.
+// Numbered markers imply a strict sequence parents must follow — these
+// three things actually happen simultaneously, so labels are more honest.
 const HOW_IT_WORKS = [
   {
-    number: "01",
+    label: "The toy",
     title: "Your child plays on the toy",
     body: "The physical MathBot device shows math questions on its screen. Your child presses one of four buttons to answer — no phone, no app, no screen time.",
   },
   {
-    number: "02",
+    label: "The AI",
     title: "Questions adapt to them",
     body: "The system tracks every answer. Questions get harder when they're on a roll, and gentler when they need a moment — automatically, in real time.",
   },
   {
-    number: "03",
+    label: "The parent",
     title: "You watch them improve here",
     body: "This dashboard shows your child's accuracy, streak, and skill mastery. You'll see the proof that it's working.",
   },
@@ -49,17 +55,43 @@ export default function LandingPage() {
       <HeroSection />
 
       {/* ══════════════════════════════════════════════════════
-          §2  HOW IT WORKS
+          §2  PROBLEM STATEMENT
+          Establishes the pain point before offering a solution.
+          Parents need to feel "yes, that's my situation" first.
          ══════════════════════════════════════════════════════ */}
-      <AnimatedSection className="px-6 py-36 max-w-5xl mx-auto">
+      <AnimatedSection className="px-6 py-20 max-w-3xl mx-auto text-center">
+        <p className="text-silk text-xs uppercase tracking-widest mb-6">Sound familiar?</p>
+        <h2 className="font-display text-3xl sm:text-4xl text-paper mb-6 leading-snug">
+          Your child is spending hours on screens.<br className="hidden sm:block" />
+          You have no idea if any of it is helping<br className="hidden sm:block" />
+          them with math.
+        </h2>
+        <p className="text-muted leading-relaxed max-w-xl mx-auto">
+          Most educational apps are just games with a maths skin. They optimise for
+          engagement — not learning. And when your child puts the phone down,
+          you have no idea what they actually practised.
+        </p>
+        <p className="text-silk mt-4 leading-relaxed max-w-xl mx-auto">
+          MathBot is different. No screen for your child. No algorithm designed
+          to keep them hooked. Just questions that adapt to exactly where they are —
+          and a parent dashboard that shows you the proof.
+        </p>
+      </AnimatedSection>
+
+      {/* ══════════════════════════════════════════════════════
+          §3  HOW IT WORKS
+         ══════════════════════════════════════════════════════ */}
+      <AnimatedSection className="px-6 py-20 max-w-5xl mx-auto">
         <p className="text-silk text-xs uppercase tracking-widest mb-3">How it works</p>
         <h2 className="font-display text-4xl sm:text-5xl text-paper mb-14">
-          Three honest steps.
+          Three things working together.
         </h2>
         <div className="grid sm:grid-cols-3 gap-10">
           {HOW_IT_WORKS.map((step) => (
-            <div key={step.number} className="flex flex-col gap-3">
-              <span className="mono text-spider-red text-sm">{step.number}</span>
+            <div key={step.label} className="flex flex-col gap-3">
+              <span className="mono text-spider-red text-xs uppercase tracking-widest">
+                {step.label}
+              </span>
               <h3 className="font-display text-xl text-paper">{step.title}</h3>
               <p className="text-silk leading-relaxed text-sm">{step.body}</p>
             </div>
@@ -68,12 +100,12 @@ export default function LandingPage() {
       </AnimatedSection>
 
       {/* ══════════════════════════════════════════════════════
-          §3  MEET MATHBOT — idle robot section
+          §4  MEET MATHBOT — idle robot section
          ══════════════════════════════════════════════════════ */}
       <IdleSection />
 
       {/* ══════════════════════════════════════════════════════
-          §4  DASHBOARD PREVIEW — Web of Progress lives here
+          §5  DASHBOARD PREVIEW — Web of Progress lives here
          ══════════════════════════════════════════════════════ */}
       <AnimatedSection delay={0.1} className="px-6 py-28 bg-surface/30">
         <div className="max-w-5xl mx-auto">
@@ -111,9 +143,14 @@ export default function LandingPage() {
               showTooltips
             />
             <div>
-              <h3 className="font-display text-2xl text-paper mb-3">
+              <h3 className="font-display text-2xl text-paper mb-2">
                 Web of Progress
               </h3>
+              {/* Explanation added — first-time visitors don't know what the
+                  spiderweb means without a one-sentence annotation.          */}
+              <p className="text-web-blue text-sm mb-3 font-medium">
+                The web fills out as your child masters each skill.
+              </p>
               <p className="text-silk leading-relaxed text-sm max-w-sm">
                 The spider-web chart shows mastery in each skill at a glance.
                 As your child improves, the web fills out — literally showing
@@ -131,12 +168,16 @@ export default function LandingPage() {
       </AnimatedSection>
 
       {/* ══════════════════════════════════════════════════════
-          §5  FEATURE CARDS — why MathBot works
+          §6  FEATURE CARDS — why MathBot works
          ══════════════════════════════════════════════════════ */}
       <HangSection />
 
       {/* Footer */}
       <Footer />
+
+      {/* Sticky mobile CTA — slides up after scrolling past the hero.
+          Hidden on lg+ (desktop users see the hero CTA button).       */}
+      <StickyMobileCTA />
     </main>
   );
 }

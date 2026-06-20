@@ -261,7 +261,8 @@ export default function WebOfProgress({
               y={a.labelY}
               textAnchor={anchor}
               dominantBaseline="middle"
-              fontSize="11"
+              fontSize="12"
+              fontWeight="500"
               fontFamily="'Satoshi', sans-serif"
               fill="#AEB9D4"
             >
@@ -273,6 +274,30 @@ export default function WebOfProgress({
         {/* ── Center dot ── */}
         <circle cx={cx} cy={cy} r={2} fill="#AEB9D4" fillOpacity="0.5" />
       </svg>
+
+      {/* Visually hidden table for screen readers.
+          The SVG chart is marked role="img" with an aria-label, but the
+          actual mastery values aren't announced. This table exposes the
+          same data to assistive technology without affecting the visual. */}
+      <table className="sr-only">
+        <caption>Skill mastery percentages</caption>
+        <thead>
+          <tr>
+            <th scope="col">Skill</th>
+            <th scope="col">Mastery</th>
+            <th scope="col">Attempts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((d) => (
+            <tr key={d.skill}>
+              <td>{SKILL_LABELS[d.skill]}</td>
+              <td>{d.mastery}%</td>
+              <td>{d.attempts}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

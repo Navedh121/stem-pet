@@ -46,6 +46,13 @@
     overflow-x: hidden;
   }
 
+  /* Remove the 300ms tap delay on Android/iOS for all interactive elements.
+     Without this, mobile browsers wait to check for a double-tap-to-zoom
+     gesture before firing click — making every button feel laggy.           */
+  a, button, [role="button"] {
+    touch-action: manipulation;
+  }
+
   /* Heading tags use the display font */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Clash Display', sans-serif;

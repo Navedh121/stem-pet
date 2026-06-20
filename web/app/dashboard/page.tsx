@@ -172,6 +172,37 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* Empty-data banner — shown when the toy hasn't been used yet.
+          The full dashboard layout is still visible so parents know what
+          they'll see once data starts flowing.                            */}
+      {attempts.length === 0 && (
+        <div className="card p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 border-web-blue/30 bg-web-blue/5">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-web-blue/15 flex items-center justify-center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="#1E6BFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-paper text-sm font-medium">
+              {childRow.name} hasn&apos;t played yet
+            </p>
+            <p className="text-muted text-sm mt-0.5">
+              Turn on the toy and answer a few questions — data will appear here within seconds.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/link-device"
+            className="flex-shrink-0 text-web-blue text-sm hover:underline whitespace-nowrap"
+          >
+            Link a device →
+          </Link>
+        </div>
+      )}
+
       {/* ── Stat cards row ─────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard

@@ -4,6 +4,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase-server";
+import ChildSelector from "@/components/ChildSelector";
 import type { Child } from "@/lib/types";
 
 export default async function DashboardLayout({
@@ -47,17 +48,7 @@ export default async function DashboardLayout({
           {/* Child selector + actions */}
           <div className="flex items-center gap-3 ml-auto">
             {kids.length > 0 ? (
-              <select
-                aria-label="Select child"
-                defaultValue={kids[0]?.id}
-                className="bg-surface border border-silk/15 rounded-lg px-3 py-1.5 text-sm text-paper focus:outline-none focus:border-web-blue"
-              >
-                {kids.map((k) => (
-                  <option key={k.id} value={k.id}>
-                    {k.name}
-                  </option>
-                ))}
-              </select>
+              <ChildSelector kids={kids} />
             ) : (
               <Link
                 href="/dashboard/add-child"
@@ -71,7 +62,7 @@ export default async function DashboardLayout({
             <form action={signOut}>
               <button
                 type="submit"
-                className="text-muted hover:text-silk text-sm transition-colors"
+                className="text-muted hover:text-silk text-sm transition-colors cursor-pointer"
               >
                 Sign out
               </button>
