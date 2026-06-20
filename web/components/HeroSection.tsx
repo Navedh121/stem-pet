@@ -64,7 +64,7 @@ export default function HeroSection() {
           style={{ fontSize: "clamp(3.5rem, 9vw, 6.5rem)" }}
           {...fadeUp(0.2)}
         >
-          <span className="text-paper">Math</span>
+          <span className="text-paper" style={{ WebkitTextStroke: "1.5px #E11D2A" }}>Math</span>
           <span className="text-spider-red">Bot</span>
         </motion.h1>
 
@@ -99,38 +99,38 @@ export default function HeroSection() {
         </motion.div>
       </div>
 
-      {/* ── Right column: robot at center-right ──
-           items-center moves it DOWN from the top-right corner.
-           justify-end + pr keeps it on the right side but off the edge.
-           The image is larger (maxWidth ~56 vw) so the web strands that
-           trail to the side have room and don't end at a visible hard edge. */}
-      <div className="relative z-10 flex-1 flex items-center justify-center lg:justify-end lg:pr-32">
-        <motion.div
-          {...(shouldReduceMotion
-            ? {}
-            : {
-                initial: { opacity: 0, x: 30 },
-                animate: { opacity: 1, x: 0 },
-                transition: { duration: 0.8, delay: 0.2, ease: "easeOut" },
-              })}
-        >
-          <motion.div {...floatProps}>
-            <Image
-              src="/mathbot-hero.png"
-              alt="MathBot robot with web strands trailing to the side"
-              width={1888}
-              height={2270}
-              priority
-              style={{
-                width: "clamp(570px, 84vw, 1140px)",
-                height: "auto",
-                maxHeight: "92vh",
-                objectFit: "contain",
-                display: "block",
-              }}
-            />
+      {/* ── Right column: robot absolutely anchored to the right ──
+           Absolute positioning keeps the robot's RIGHT edge fixed to the
+           viewport edge so the robot is always fully visible. The image is
+           sized by HEIGHT (not width) so the robot fills the viewport top
+           portion. Web strands extend left across the section naturally. */}
+      <div className="absolute inset-0 pointer-events-none z-10" aria-hidden="false">
+        <div style={{ position: "absolute", top: "50%", right: "5vw", transform: "translateY(-50%)" }}>
+          <motion.div
+            {...(shouldReduceMotion
+              ? {}
+              : {
+                  initial: { opacity: 0, x: 30 },
+                  animate: { opacity: 1, x: 0 },
+                  transition: { duration: 0.8, delay: 0.2, ease: "easeOut" },
+                })}
+          >
+            <motion.div {...floatProps}>
+              <Image
+                src="/mathbot-hero.png"
+                alt="MathBot robot with web strands trailing to the side"
+                width={1888}
+                height={2270}
+                priority
+                style={{
+                  height: "64vh",
+                  width: "auto",
+                  display: "block",
+                }}
+              />
+            </motion.div>
           </motion.div>
-        </motion.div>
+        </div>
       </div>
 
     </section>
