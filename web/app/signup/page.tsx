@@ -73,7 +73,7 @@ export default function SignupPage() {
       <main className="min-h-screen bg-ink flex items-center justify-center p-4">
         <div className="w-full max-w-sm text-center">
           <div className="text-center mb-8">
-            <span className="font-display font-bold text-3xl text-paper" style={{ WebkitTextStroke: "1.5px #E11D2A" }}>STEM</span>
+            <span className="font-display font-bold text-3xl text-paper" style={{ WebkitTextStroke: "1.5px #E11D2A", paintOrder: "stroke fill" }}>STEM</span>
             <span className="font-display font-bold text-3xl text-spider-red">Pet</span>
           </div>
           <div className="card p-8 space-y-4">

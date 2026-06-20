@@ -64,7 +64,7 @@ export default function HeroSection() {
           style={{ fontSize: "clamp(3.5rem, 9vw, 6.5rem)" }}
           {...fadeUp(0.2)}
         >
-          <span className="text-paper" style={{ WebkitTextStroke: "1.5px #E11D2A" }}>Math</span>
+          <span className="text-paper" style={{ WebkitTextStroke: "1.5px #E11D2A", paintOrder: "stroke fill" }}>Math</span>
           <span className="text-spider-red">Bot</span>
         </motion.h1>
 
