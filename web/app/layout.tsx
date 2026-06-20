@@ -5,14 +5,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "STEMPet — Your child's math progress, at a glance",
+  title: "MathBot — Your child's math progress, at a glance",
   description:
-    "STEMPet is an adaptive math toy for kids aged 6–12. This parent dashboard shows your child's progress in real time.",
-  keywords: ["math", "kids", "education", "adaptive learning", "STEM"],
+    "MathBot is an adaptive math toy for kids aged 6–12. This parent dashboard shows your child's progress in real time.",
+  keywords: ["math", "kids", "education", "adaptive learning", "STEM", "MathBot"],
   // Open Graph preview when sharing the URL
   openGraph: {
-    title: "STEMPet",
-    description: "See your child's math progress grow.",
+    title: "MathBot",
+    description: "Watch your child's math skills grow — in real time.",
     type: "website",
   },
 };
@@ -27,7 +27,7 @@ export default function RootLayout({
     // Font class names are handled by globals.css @import, so no
     // next/font/google is needed here.
     <html lang="en" className="dark">
-      <body className="bg-ink text-paper antialiased">
+      <body className="bg-ink text-paper antialiased" suppressHydrationWarning>
         {children}
       </body>
     </html>

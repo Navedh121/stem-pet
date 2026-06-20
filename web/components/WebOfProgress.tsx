@@ -72,6 +72,13 @@ export default function WebOfProgress({
   const maxR = size * 0.38;    // outer radius of the web
   const ringCount = 4;          // how many concentric rings to draw
 
+  // Extra horizontal space (px per side) so the left ("Division") and right
+  // ("Subtraction") axis labels are not clipped by the SVG viewport.
+  // All radar drawing coordinates are unchanged — only the viewBox and the
+  // wrapper div get wider.  80px comfortably fits the longest side label
+  // ("Subtraction", ~71px at 11px/Satoshi) at any supported size.
+  const H_PAD = 80;
+
   // Axes: one per skill.  Start from the top and go clockwise.
   const axes = data.map((d, i) => {
     const angleDeg = (i / data.length) * 360 - 90;  // start at top
@@ -100,10 +107,10 @@ export default function WebOfProgress({
   const outerPoints = axes.map((a) => `${a.outerX},${a.outerY}`).join(" ");
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
+    <div className="relative" style={{ width: size + H_PAD * 2, maxWidth: "100%" }}>
       <svg
-        viewBox={`0 0 ${size} ${size}`}
-        width={size}
+        viewBox={`${-H_PAD} 0 ${size + H_PAD * 2} ${size}`}
+        width={size + H_PAD * 2}
         height={size}
         aria-label="Web of Progress — skill mastery radar chart"
         role="img"
@@ -194,11 +201,14 @@ export default function WebOfProgress({
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
             />
-            {/* Visible node */}
+            {/* Visible node.
+                Do NOT also set r={} as a direct prop — Framer Motion
+                owns `r` via initial/animate; a competing direct prop
+                causes a server/client hydration mismatch (server sees
+                r=4, client's initial override is r=0).                */}
             <motion.circle
               cx={a.masteryX}
               cy={a.masteryY}
-              r={hoveredIndex === i ? 6 : 4}
               fill={hoveredIndex === i ? "#1E6BFF" : "#AEB9D4"}
               filter={hoveredIndex === i ? "url(#glow)" : undefined}
               initial={{ r: 0 }}

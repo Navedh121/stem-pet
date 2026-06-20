@@ -1,23 +1,25 @@
-// Public landing page.
-// Follows DESIGN_BRIEF §3A exactly:
-//   1. Hero: Web of Progress + headline + CTA
-//   2. How it works: 3 honest steps
-//   3. What parents see: preview cards
-//   4. Why it matters: screen-time + adaptive angle
-//   5. Footer
+// MathBot public landing page.
+// Sections:
+//   1. Hero        — robot + wordmark + CTA (HeroSection)
+//   2. How it works — 3 honest steps
+//   3. Meet MathBot — idle robot (IdleSection)
+//   4. Dashboard   — Web of Progress + stat cards
+//   5. Why it matters — 3 feature cards (HangSection)
+//   6. Footer
 
 import Link from "next/link";
 import WebOfProgress, { SAMPLE_MASTERY } from "@/components/WebOfProgress";
-import BackgroundThreads from "@/components/BackgroundThreads";
 import AnimatedSection from "@/components/AnimatedSection";
 import Footer from "@/components/Footer";
+import HeroSection from "@/components/HeroSection";
+import IdleSection from "@/components/IdleSection";
+import HangSection from "@/components/HangSection";
 
-// Step data for the "How it works" section.
 const HOW_IT_WORKS = [
   {
     number: "01",
     title: "Your child plays on the toy",
-    body: "The physical STEMPet device shows math questions on its screen. Your child presses one of four buttons to answer — no phone, no app, no screen time.",
+    body: "The physical MathBot device shows math questions on its screen. Your child presses one of four buttons to answer — no phone, no app, no screen time.",
   },
   {
     number: "02",
@@ -31,10 +33,9 @@ const HOW_IT_WORKS = [
   },
 ];
 
-// Stats preview data (shown in "What parents see" section).
 const PREVIEW_STATS = [
-  { label: "Current streak",    value: "8 days",  color: "red" },
-  { label: "Overall accuracy",  value: "74%",     color: "blue" },
+  { label: "Current streak",     value: "8 days", color: "red"  },
+  { label: "Overall accuracy",   value: "74%",    color: "blue" },
   { label: "Questions this week", value: "47",    color: "blue" },
 ];
 
@@ -43,76 +44,23 @@ export default function LandingPage() {
     <main className="relative bg-ink min-h-screen overflow-x-hidden">
 
       {/* ══════════════════════════════════════════════════════
-          §1  HERO
+          §1  HERO — robot + wordmark, full-screen
          ══════════════════════════════════════════════════════ */}
-      <section className="relative min-h-screen flex flex-col lg:flex-row items-center justify-center gap-12 px-6 pt-20 pb-12 max-w-6xl mx-auto">
-        {/* Ambient web threads */}
-        <BackgroundThreads />
-
-        {/* Text side */}
-        <div className="relative z-10 flex-1 max-w-lg">
-          {/* Badge */}
-          <span className="inline-flex items-center gap-2 bg-surface border border-silk/15 rounded-full px-4 py-1.5 text-xs text-silk mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-spider-red" />
-            Adaptive math · off the screen
-          </span>
-
-          <h1 className="font-display text-display lg:text-display-lg text-paper leading-[1.05] mb-6">
-            Watch your child&apos;s{" "}
-            <span className="text-web-blue">math skills</span>{" "}
-            grow — in real time.
-          </h1>
-
-          <p className="text-silk text-lg leading-relaxed mb-8">
-            STEMPet is a physical toy that asks kids adaptive math questions.
-            No apps. No screens. Just progress you can see.
-          </p>
-
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/signup"
-              className="inline-flex items-center gap-2 bg-spider-red hover:bg-spider-red/90 text-white font-body font-medium px-6 py-3 rounded-lg transition-colors"
-            >
-              See your child&apos;s progress
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 border border-silk/20 hover:border-silk/40 text-silk hover:text-paper px-6 py-3 rounded-lg transition-colors"
-            >
-              Sign in
-            </Link>
-          </div>
-        </div>
-
-        {/* Chart side */}
-        <div className="relative z-10 flex-1 flex justify-center lg:justify-end">
-          <div className="relative">
-            {/* Subtle glow behind the chart */}
-            <div className="absolute inset-0 rounded-full bg-web-blue/5 blur-3xl scale-125" />
-            <WebOfProgress
-              data={SAMPLE_MASTERY}
-              size={320}
-              animated={true}
-              showTooltips={true}
-            />
-          </div>
-        </div>
-      </section>
+      <HeroSection />
 
       {/* ══════════════════════════════════════════════════════
           §2  HOW IT WORKS
          ══════════════════════════════════════════════════════ */}
-      <AnimatedSection className="px-6 py-20 max-w-5xl mx-auto">
+      <AnimatedSection className="px-6 py-36 max-w-5xl mx-auto">
         <p className="text-silk text-xs uppercase tracking-widest mb-3">How it works</p>
-        <h2 className="font-display text-h2 text-paper mb-12">
+        <h2 className="font-display text-4xl sm:text-5xl text-paper mb-14">
           Three honest steps.
         </h2>
-
-        <div className="grid sm:grid-cols-3 gap-8">
+        <div className="grid sm:grid-cols-3 gap-10">
           {HOW_IT_WORKS.map((step) => (
             <div key={step.number} className="flex flex-col gap-3">
               <span className="mono text-spider-red text-sm">{step.number}</span>
-              <h3 className="font-display text-h3 text-paper">{step.title}</h3>
+              <h3 className="font-display text-xl text-paper">{step.title}</h3>
               <p className="text-silk leading-relaxed text-sm">{step.body}</p>
             </div>
           ))}
@@ -120,95 +68,72 @@ export default function LandingPage() {
       </AnimatedSection>
 
       {/* ══════════════════════════════════════════════════════
-          §3  WHAT PARENTS SEE (dashboard preview)
+          §3  MEET MATHBOT — idle robot section
          ══════════════════════════════════════════════════════ */}
-      <AnimatedSection
-        delay={0.1}
-        className="px-6 py-20 bg-surface/40"
-      >
+      <IdleSection />
+
+      {/* ══════════════════════════════════════════════════════
+          §4  DASHBOARD PREVIEW — Web of Progress lives here
+         ══════════════════════════════════════════════════════ */}
+      <AnimatedSection delay={0.1} className="px-6 py-28 bg-surface/30">
         <div className="max-w-5xl mx-auto">
           <p className="text-silk text-xs uppercase tracking-widest mb-3">The dashboard</p>
-          <h2 className="font-display text-h2 text-paper mb-4">
+          <h2 className="font-display text-4xl sm:text-5xl text-paper mb-4">
             The proof is in the data.
           </h2>
-          <p className="text-muted max-w-lg mb-10 leading-relaxed">
+          <p className="text-muted max-w-lg mb-12 leading-relaxed">
             Every question your child answers is logged. You&apos;ll always know
             exactly how they&apos;re doing — no guessing.
           </p>
 
-          {/* Mini stat card previews */}
+          {/* Stat card previews */}
           <div className="grid sm:grid-cols-3 gap-4 mb-8">
             {PREVIEW_STATS.map((s) => (
-              <div
-                key={s.label}
-                className="card p-5"
-              >
+              <div key={s.label} className="card p-5">
                 <p className="text-muted text-xs mb-2">{s.label}</p>
-                <p className={`mono text-2xl font-semibold ${s.color === "red" ? "text-spider-red" : "text-web-blue"}`}>
+                <p
+                  className={`mono text-2xl font-semibold ${
+                    s.color === "red" ? "text-spider-red" : "text-web-blue"
+                  }`}
+                >
                   {s.value}
                 </p>
               </div>
             ))}
           </div>
 
-          {/* Web of Progress preview */}
+          {/* Web of Progress — the signature radar chart */}
           <div className="card p-6 flex flex-col sm:flex-row items-center gap-8">
-            <WebOfProgress data={SAMPLE_MASTERY} size={240} animated={false} showTooltips={false} />
+            <WebOfProgress
+              data={SAMPLE_MASTERY}
+              size={260}
+              animated
+              showTooltips
+            />
             <div>
-              <h3 className="font-display text-h3 text-paper mb-2">Web of Progress</h3>
+              <h3 className="font-display text-2xl text-paper mb-3">
+                Web of Progress
+              </h3>
               <p className="text-silk leading-relaxed text-sm max-w-sm">
                 The spider-web chart shows mastery in each skill at a glance.
                 As your child improves, the web fills out — literally showing
                 their growth.
               </p>
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-2 mt-6 text-web-blue text-sm hover:text-paper transition-colors"
+              >
+                Create your free account →
+              </Link>
             </div>
           </div>
         </div>
       </AnimatedSection>
 
       {/* ══════════════════════════════════════════════════════
-          §4  WHY IT MATTERS
+          §5  FEATURE CARDS — why MathBot works
          ══════════════════════════════════════════════════════ */}
-      <AnimatedSection delay={0.1} className="px-6 py-20 max-w-5xl mx-auto">
-        <div className="grid sm:grid-cols-2 gap-12 items-center">
-          <div>
-            <p className="text-silk text-xs uppercase tracking-widest mb-3">Why it matters</p>
-            <h2 className="font-display text-h2 text-paper mb-6">
-              Learning that happens off a screen.
-            </h2>
-            <div className="space-y-5 text-silk leading-relaxed text-sm">
-              <p>
-                Children spend more time on screens than ever. STEMPet is built
-                on the opposite idea: a physical toy with four buttons and a small
-                display, designed to be held, not stared at.
-              </p>
-              <p>
-                The questions adapt automatically. When your child is flying,
-                the difficulty rises to keep them challenged. When they&apos;re
-                struggling, it eases back — no frustration, no giving up.
-              </p>
-              <p>
-                The result: a child who practices without being pushed, and a
-                parent who can see the proof.
-              </p>
-            </div>
-          </div>
-
-          {/* Visual callout */}
-          <div className="space-y-4">
-            {[
-              { icon: "📵", text: "No app. No phone. No screen time." },
-              { icon: "🎯", text: "Questions adapt to your child's exact level." },
-              { icon: "📈", text: "You see the progress. Your child feels it." },
-            ].map((item) => (
-              <div key={item.text} className="card p-4 flex items-start gap-3">
-                <span className="text-xl" role="img" aria-hidden="true">{item.icon}</span>
-                <p className="text-paper text-sm leading-relaxed">{item.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </AnimatedSection>
+      <HangSection />
 
       {/* Footer */}
       <Footer />

@@ -6,10 +6,13 @@
 > trusting them.
 
 ## Current status
-**COMPLETE.** All 8 phases built, `npm run build` passes clean (12 pages, 0 errors),
-committed as `feat: complete STEMPet build — all 8 phases` (commit 3d4118e on master).
+**Branch `mathbot-redesign` active.**
+Landing page fully redesigned with MathBot branding + 3 robot images. Build passes clean (11 routes, 0 errors).
 
-## Next step (human action required)
+## Next step
+Push `mathbot-redesign` to GitHub, open a PR into `master`, then deploy a Vercel preview from the PR.
+
+## Next step (human action required, main branch)
 Follow the 5-step manual checklist in README.md:
 1. Create Supabase project → run supabase/schema.sql + supabase/seed.sql → copy env vars to web/.env.local.
 2. Get a free Groq API key at console.groq.com → add to web/.env.local.
@@ -29,7 +32,17 @@ Demo login (after seed.sql runs): demo@stempet.dev / Demo1234!
 - [x] **Phase 7 — Demo data** (`supabase/seed.sql` — ~200 attempts for Alex over 30 days via PL/pgSQL DO block)
 - [x] **Phase 8 — Docs** (`README.md` with exact 6-step setup checklist; `WHY_NOTES.md` with 7 decision explanations)
 
-## Files created / changed
+## mathbot-redesign changes (June 2026)
+
+- `web/app/page.tsx` — rewritten: 5 new sections, uses new components, removes old radar-in-hero layout
+- `web/app/layout.tsx` — updated metadata title/description to "MathBot"
+- `web/components/HeroSection.tsx` — new: two-column hero, "Math"(white)+"Bot"(red) wordmark, mathbot-hero.png right column, SVG web-strand animation from robot hand to wordmark
+- `web/components/IdleSection.tsx` — new: centered idle-bob + tilt robot with 6 SVG tendrils
+- `web/components/HangSection.tsx` — new: hanging robot at top, scroll-triggered SVG strands that wrap 3 feature cards
+- `web/components/Footer.tsx` — updated: "MathBot" in wordmark, "STEMPet" only in copyright line
+- `web/public/mathbot-hero.png`, `mathbot-idle.png`, `mathbot-hang.png` — added by user
+
+## Files created / changed (original phases)
 
 ### /supabase
 - `schema.sql` — 4 tables + 4 indexes + RLS policies
