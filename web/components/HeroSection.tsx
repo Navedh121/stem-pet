@@ -104,7 +104,7 @@ export default function HeroSection() {
            justify-end + pr keeps it on the right side but off the edge.
            The image is larger (maxWidth ~56 vw) so the web strands that
            trail to the side have room and don't end at a visible hard edge. */}
-      <div className="relative z-10 flex-1 flex items-center justify-center lg:justify-end lg:pr-10">
+      <div className="relative z-10 flex-1 flex items-center justify-center lg:justify-end lg:pr-32">
         <motion.div
           {...(shouldReduceMotion
             ? {}

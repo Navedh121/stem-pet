@@ -41,7 +41,7 @@ export default function IdleSection() {
         aria-hidden="true"
         style={{
           background:
-            "radial-gradient(ellipse 65% 60% at 50% 68%, rgba(30,107,255,0.17) 0%, transparent 70%)",
+            "radial-gradient(ellipse 80% 70% at 50% 68%, rgba(30,107,255,0.34) 0%, transparent 75%)",
         }}
       />
 
