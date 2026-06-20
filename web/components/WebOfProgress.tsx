@@ -166,17 +166,20 @@ export default function WebOfProgress({
           />
         ))}
 
-        {/* ── Mastery filled polygon ── */}
+        {/* ── Mastery filled polygon ──
+             Animate opacity only, not scale. SVG elements don't support CSS
+             `scale` the same way HTML elements do — Framer Motion 11 throws
+             (message: undefined) when it tries to read the computed CSS
+             transform back from a <polygon> during the animation loop.     */}
         <motion.polygon
           points={masteryPoints}
           fill="url(#masteryGradient)"
           stroke="#1E6BFF"
           strokeWidth="1.5"
           strokeLinejoin="round"
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={filled ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: filled ? 1 : 0 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          style={{ transformOrigin: `${cx}px ${cy}px` }}
         />
 
         {/* ── Outer web frame (glowing border) ── */}
