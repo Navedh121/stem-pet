@@ -112,6 +112,7 @@ export default function WebOfProgress({
         viewBox={`${-H_PAD} 0 ${size + H_PAD * 2} ${size}`}
         width={size + H_PAD * 2}
         height={size}
+        style={{ maxWidth: "100%", height: "auto" }}
         aria-label="Web of Progress — skill mastery radar chart"
         role="img"
       >

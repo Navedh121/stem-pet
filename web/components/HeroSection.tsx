@@ -104,7 +104,9 @@ export default function HeroSection() {
            viewport edge so the robot is always fully visible. The image is
            sized by HEIGHT (not width) so the robot fills the viewport top
            portion. Web strands extend left across the section naturally. */}
-      <div className="absolute inset-0 pointer-events-none z-10" aria-hidden="false">
+      {/* hidden on mobile/tablet — the robot is visible in IdleSection below.
+          On desktop (lg+) it floats anchored to the right of the hero.       */}
+      <div className="absolute inset-0 pointer-events-none z-10 hidden lg:block" aria-hidden="true">
         <div style={{ position: "absolute", top: "50%", right: "5vw", transform: "translateY(-50%)" }}>
           <motion.div
             {...(shouldReduceMotion
