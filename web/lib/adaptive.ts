@@ -2,32 +2,33 @@
 // Adaptive Difficulty Engine
 // ============================================================
 //
-// This module answers one question: "given a child's history
-// FOR A SPECIFIC AGE BAND, what skill and level should their
-// NEXT question be?"
+// Answers one question: "given this child's history in a
+// specific age band, what skill and level should their NEXT
+// question be?"
 //
-// Progress is tracked INDEPENDENTLY per age group — a child's
-// 6-8 level is separate from their 10-12 level.  This reflects
-// the fact that the child picks their age band on the device each
-// session, so older siblings (or the same child a year later) can
-// use the toy with an appropriate challenge level without
-// resetting anyone else's progress.
+// KEY DESIGN DECISION — skills are now MIXED, not sequential.
+// Every call picks a skill at random (uniform across all four).
+// The level for each skill adapts independently based on recent
+// accuracy in that skill + age band.  This keeps sessions varied
+// and means the child practises everything, not just the skill
+// they happen to be "on" in the old linear order.
 //
-// The rules are intentionally simple and explainable — a key
-// talking point for portfolio / interview conversations:
+// Per-skill level rules (applied independently per skill AND age band):
+//   • Look at the child's last 10 attempts in that skill + band.
+//   • accuracy ≥ 80%  →  level up    (ceiling: level 4)
+//   • accuracy ≤ 40%  →  level down  (floor:   level 1)
+//   • otherwise       →  stay put
+//   • fewer than 10 attempts → not enough data, stay at the
+//     current recorded level (or level 1 if brand new).
 //
-//   • Skills progress in order: addition → subtraction →
-//     multiplication → division.
-//   • Each skill has levels 1–4 (numbers get bigger each level).
-//   • Look at the child's last 10 attempts in their current skill
-//     AND their current age band:
-//       accuracy ≥ 80%  →  level up (or advance to next skill)
-//       accuracy ≤ 40%  →  level down (min level 1)
-//       otherwise       →  stay put
+// Level 4 is the permanent ceiling — once a child reaches it,
+// questions stay at level 4 for that skill forever.  There is
+// NO session cap: questions keep coming indefinitely.
 //
-// A future upgrade could replace these rules with a machine-learning
-// "knowledge tracing" model (see WHY_NOTES.md), but rules are better
-// for v1 because they're explainable and need zero training data.
+// A future upgrade could replace these simple rules with a
+// machine-learning "knowledge tracing" model, but rules are
+// better for v1 because they're explainable and need no
+// training data. (See WHY_NOTES.md.)
 // ============================================================
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -39,119 +40,105 @@ export type Difficulty = {
   level: Level;
 };
 
-// How many recent attempts to look at when evaluating accuracy.
+// How many recent attempts per skill to evaluate accuracy over.
 const WINDOW_SIZE = 10;
 
-// Thresholds for advancing / regressing.
-const ADVANCE_THRESHOLD = 0.8;   // 80%+ correct → go harder
-const REGRESS_THRESHOLD = 0.4;   // 40%- correct → go easier
+// Thresholds for moving up or down a level.
+const ADVANCE_THRESHOLD = 0.8;   // ≥ 80% correct in the window → level up
+const REGRESS_THRESHOLD = 0.4;   // ≤ 40% correct in the window → level down
 
 /**
- * Determine the appropriate skill and level for a child's next question
- * within a specific age band.
+ * Pick a random skill and compute the right level for it.
+ *
+ * The skill is chosen uniformly at random from all four so the child
+ * gets variety every session.  The level for that skill is derived
+ * solely from the child's recent performance in THAT skill and age
+ * band — good addition scores don't affect the multiplication level.
  *
  * @param childId   UUID of the child row in the database.
- * @param ageGroup  The age band chosen on the device this session.
- *                  Only attempts recorded under THIS band are used —
- *                  so each band has its own independent progress track.
- * @param supabase  A Supabase client (service-role recommended — no RLS issues).
- * @returns         The target { skill, level } for the next question.
+ * @param ageGroup  Band chosen on the device this session.
+ *                  Progress is tracked separately per band.
+ * @param supabase  Service-role Supabase client (bypasses RLS).
+ * @returns         { skill, level } for the next question.
  */
 export async function getTargetDifficulty(
   childId: string,
   ageGroup: AgeGroup,
   supabase: SupabaseClient
 ): Promise<Difficulty> {
-  // Step 1: Figure out where the child currently is IN THIS AGE BAND.
-  // We look at their most recent attempt (filtered by age_group) to find
-  // their "current" skill.
-  const current = await getCurrentDifficulty(childId, ageGroup, supabase);
+  // Step 1: Pick a random skill.
+  // Math.floor(Math.random() * 4) gives 0, 1, 2, or 3 with equal probability.
+  const skill: Skill = SKILL_ORDER[Math.floor(Math.random() * SKILL_ORDER.length)];
 
-  // Step 2: Fetch the last WINDOW_SIZE attempts in that skill AND age band.
-  const { data: attempts, error } = await supabase
-    .from("attempts")
-    .select("is_correct")
-    .eq("child_id", childId)
-    .eq("skill", current.skill)
-    .eq("age_group", ageGroup)   // ← only consider this age band
-    .order("created_at", { ascending: false })
-    .limit(WINDOW_SIZE);
+  // Step 2: Work out the appropriate level for that skill.
+  const level = await getLevelForSkill(childId, skill, ageGroup, supabase);
 
-  if (error || !attempts || attempts.length < WINDOW_SIZE) {
-    // Not enough data yet in this band — stay at the current level.
-    return current;
-  }
-
-  // Step 3: Calculate accuracy over the window.
-  const correctCount = attempts.filter((a) => a.is_correct).length;
-  const accuracy = correctCount / attempts.length;
-
-  // Step 4: Apply the rules.
-  if (accuracy >= ADVANCE_THRESHOLD) {
-    return advance(current);
-  }
-  if (accuracy <= REGRESS_THRESHOLD) {
-    return regress(current);
-  }
-  return current;  // Stay put.
+  return { skill, level };
 }
 
-// ── Internal helpers ─────────────────────────────────────────
+// ── Internal helper ───────────────────────────────────────────
 
 /**
- * Find the child's current skill and level in a given age band by looking
- * at their most recent attempt in that band.
- * Falls back to addition / level 1 for new children (or a new age band).
+ * Compute the right level for a specific skill by inspecting
+ * the child's recent attempts in that skill + age band.
+ *
+ * Returns level 1 if the child has never tried this skill
+ * under the current age band — always start easy.
  */
-async function getCurrentDifficulty(
+async function getLevelForSkill(
   childId: string,
+  skill: Skill,
   ageGroup: AgeGroup,
   supabase: SupabaseClient
-): Promise<Difficulty> {
-  const { data } = await supabase
+): Promise<Level> {
+  // Find the most recent attempt for this skill + band so we know
+  // what level the child was last working at.
+  const { data: lastAttempt } = await supabase
     .from("attempts")
-    .select("skill, level")
+    .select("level")
     .eq("child_id", childId)
-    .eq("age_group", ageGroup)   // ← only look at this band's history
+    .eq("skill", skill)
+    .eq("age_group", ageGroup)
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
 
-  if (!data) {
-    // No history in this band — start at the beginning.
-    return { skill: "addition", level: 1 };
+  // No history for this skill in this band yet — begin at level 1.
+  if (!lastAttempt) return 1;
+
+  const currentLevel = lastAttempt.level as Level;
+
+  // Fetch the last WINDOW_SIZE attempts for this skill + band
+  // to measure recent accuracy.
+  const { data: window, error } = await supabase
+    .from("attempts")
+    .select("is_correct")
+    .eq("child_id", childId)
+    .eq("skill", skill)
+    .eq("age_group", ageGroup)
+    .order("created_at", { ascending: false })
+    .limit(WINDOW_SIZE);
+
+  if (error || !window || window.length < WINDOW_SIZE) {
+    // Not enough recent data — keep the current level as-is.
+    return currentLevel;
   }
 
-  return { skill: data.skill as Skill, level: data.level as Level };
-}
+  const correct  = window.filter((a) => a.is_correct).length;
+  const accuracy = correct / window.length;
 
-/**
- * Move the child one step forward.
- * Level 1→2→3→4, then addition→subtraction→multiplication→division.
- */
-function advance(current: Difficulty): Difficulty {
-  if (current.level < MAX_LEVEL) {
-    // Move up within the current skill.
-    return { skill: current.skill, level: (current.level + 1) as Level };
+  if (accuracy >= ADVANCE_THRESHOLD && currentLevel < MAX_LEVEL) {
+    // Child is doing well — step up one level.
+    // If already at MAX_LEVEL (4), this branch is skipped and we stay put.
+    return (currentLevel + 1) as Level;
   }
 
-  // Already at the top level — advance to the next skill at level 1.
-  const skillIndex = SKILL_ORDER.indexOf(current.skill);
-  if (skillIndex < SKILL_ORDER.length - 1) {
-    return { skill: SKILL_ORDER[skillIndex + 1], level: 1 };
+  if (accuracy <= REGRESS_THRESHOLD && currentLevel > 1) {
+    // Child is struggling — step back one level.
+    // If already at level 1, this branch is skipped and we stay put.
+    return (currentLevel - 1) as Level;
   }
 
-  // Already at division / level 4 — the highest we can go.
-  return current;
-}
-
-/**
- * Move the child one step back (minimum level 1 — never change skill downward).
- */
-function regress(current: Difficulty): Difficulty {
-  if (current.level > 1) {
-    return { skill: current.skill, level: (current.level - 1) as Level };
-  }
-  // Already at level 1 — can't go lower.
-  return current;
+  // Accuracy is in the middle range, or level is already at its ceiling/floor.
+  return currentLevel;
 }
