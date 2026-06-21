@@ -72,7 +72,7 @@ Verify:
 1. Install [Arduino IDE](https://www.arduino.cc/en/software) (2.x recommended).
 2. In Arduino IDE → **Boards Manager**, install **esp32 by Espressif Systems**.
 3. In **Library Manager**, install:
-   - `Adafruit SSD1306`
+   - `Adafruit ILI9341`
    - `Adafruit GFX Library`
    - `ArduinoJson`
 4. Open `firmware/STEMPet_Firmware.ino`.
