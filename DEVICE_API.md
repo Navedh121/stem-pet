@@ -33,13 +33,14 @@ they are looking at.
 ### Request
 
 ```
-GET /api/next-question?device_code=DEMO01&age_group=8-10
+GET /api/next-question?device_code=DEMO01&age_group=8-10&level=2
 ```
 
-| Query param   | Type   | Required | Description |
-|---------------|--------|----------|-------------|
-| `device_code` | string | yes      | The code configured in the firmware and entered in the dashboard. Case-sensitive (firmware always sends uppercase). |
-| `age_group`   | string | yes      | The band chosen by the child on the age-select screen. One of: `6-8`, `8-10`, `10-12`. The server rejects any other value with `400`. |
+| Query param   | Type    | Required | Description |
+|---------------|---------|----------|-------------|
+| `device_code` | string  | yes      | The code configured in the firmware and entered in the dashboard. Case-sensitive (firmware always sends uppercase). |
+| `age_group`   | string  | yes      | The band chosen by the child on the age-select screen. One of: `6-8`, `8-10`, `10-12`. The server rejects any other value with `400`. |
+| `level`       | integer | yes      | Difficulty level chosen by the child on the level-select screen. One of: `1`, `2`, `3`, `4`. The server picks a random skill at this level. |
 
 ### Success response — 200 OK
 
@@ -68,6 +69,7 @@ GET /api/next-question?device_code=DEMO01&age_group=8-10
 | Status | Body | Cause |
 |--------|------|-------|
 | 400 | `{"error":"Missing or invalid age_group. Must be one of: 6-8, 8-10, 10-12"}` | `age_group` missing or unrecognised. |
+| 400 | `{"error":"Missing or invalid level. Must be 1, 2, 3, or 4."}` | `level` missing or not 1–4. |
 | 400 | `{"error":"Missing device_code query parameter"}` | `device_code` not supplied. |
 | 404 | `{"error":"Unknown device_code. Has the toy been linked to a child?"}` | Code not in the `devices` table. |
 | 503 | `{"error":"No questions available. Was seed.sql run in Supabase?"}` | Database has no questions at all (Groq also failed). |
@@ -125,16 +127,17 @@ Content-Type: application/json
 
 ```
 // Boot
-selectAgeGroup()          // child presses A/B/C to pick 6-8, 8-10, or 10-12
+selectAgeGroup()    // child presses A/B/C to pick 6-8, 8-10, or 10-12
+selectLevel()       // child presses A/B/C/D to pick level 1/2/3/4
 tryConnectWifi()
 
 // Each question
-q = GET /api/next-question?device_code=DEMO01&age_group=8-10
+q = GET /api/next-question?device_code=DEMO01&age_group=8-10&level=2
 display(q.question_text, q.options)
-displayCornerText(DEVICE_CODE)          // shown at all times on question screen
+displayCornerText(DEVICE_CODE)     // shown at all times on question screen
 
 // Child answers
-pressed = waitForButtonPress()          // 0–3
+pressed = waitForButtonPress()     // 0–3
 isCorrect = (pressed == q.correct_index)
 showFeedback(isCorrect)
 
@@ -145,22 +148,22 @@ POST /api/submit-answer {
 }
 
 // While child reads current question, prefetch the next one in background
-prefetch: GET /api/next-question?device_code=DEMO01&age_group=8-10
+prefetch: GET /api/next-question?device_code=DEMO01&age_group=8-10&level=2
 ```
 
 ---
 
-## Adaptive difficulty
+## How difficulty works
 
-The server picks `skill` and `level` using a simple rule engine in
-`web/lib/adaptive.ts`. Rules are evaluated **per-age-group** — so a child's
-progress at "6-8" is completely independent from "10-12". Each band starts at
-addition / level 1 and advances or regresses based on the last 10 attempts
-in that band:
+The **level** (1–4) is chosen by the child on the device before play begins and
+stays fixed for the entire session.  Within that level, the server picks a
+**random skill** (addition, subtraction, multiplication, or division) for each
+question — so every question is a mixed-skill surprise at a known difficulty.
 
-- ≥ 80% correct → level up (or advance to next skill)  
-- ≤ 40% correct → level down  
-- otherwise → stay
+- Level 1: small numbers (1–10)
+- Level 2: medium numbers (5–20)
+- Level 3: larger numbers (10–50), may include short word problems
+- Level 4: biggest numbers (20–100), more complex word problems
 
 ---
 

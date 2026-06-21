@@ -88,6 +88,10 @@ bool useOfflineMode = false;
 // The valid strings match the server exactly: "6-8", "8-10", "10-12".
 const char* selectedAgeGroup = "8-10";   // default (overwritten by selectAgeGroup())
 
+// Difficulty level chosen on boot — 1 (easy) to 4 (hard).
+// Skills are always mixed; the level controls how big the numbers are.
+int selectedLevel = 1;                   // default (overwritten by selectLevel())
+
 // ── Represents one question (either from the API or generated locally) ──
 struct Question {
   String questionText;
@@ -140,10 +144,10 @@ void setup() {
   // Open the preferences namespace to read/write the offline level tracker.
   prefs.begin("stempet", false);
 
-  // ── Age-group selection (before WiFi so the child always picks) ──
-  // The chosen group is sent with every API call so the server tracks
-  // progress separately per band.
+  // ── Age-group + level selection (before WiFi so the child always picks) ──
+  // Both values are sent with every API call.
   selectAgeGroup();
+  selectLevel();
 
   // Try to connect to WiFi.
   tryConnectWifi();
@@ -275,6 +279,67 @@ void selectAgeGroup() {
 
 
 // =============================================================
+//  Level selection — runs once on boot after age-group selection
+// =============================================================
+
+// Shows four options (A–D = levels 1–4) and waits for a button press.
+// Stores the result in selectedLevel for the rest of the session.
+void selectLevel() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.println("Select Level:");
+  display.println("");
+  display.println("A: Level 1 (Easy)");
+  display.println("B: Level 2 (Medium)");
+  display.println("C: Level 3 (Tricky)");
+  display.println("D: Level 4 (Hard)");
+  display.display();
+
+  Serial.println("[level] Waiting for level selection...");
+
+  const int buttonPins[] = {BUTTON_A_PIN, BUTTON_B_PIN, BUTTON_C_PIN, BUTTON_D_PIN};
+
+  // Wait until all buttons are released before accepting a new press.
+  bool anyPressed = true;
+  while (anyPressed) {
+    anyPressed = false;
+    for (int i = 0; i < 4; i++) {
+      if (digitalRead(buttonPins[i]) == LOW) anyPressed = true;
+    }
+    delay(10);
+  }
+
+  // All 4 buttons are valid here (unlike age selection which only uses A/B/C).
+  while (true) {
+    for (int i = 0; i < 4; i++) {
+      if (digitalRead(buttonPins[i]) == LOW) {
+        delay(50);   // debounce
+        if (digitalRead(buttonPins[i]) == LOW) {
+          selectedLevel = i + 1;   // A=1, B=2, C=3, D=4
+          Serial.print("[level] Selected: ");
+          Serial.println(selectedLevel);
+
+          // Confirm on screen.
+          display.clearDisplay();
+          display.setTextSize(1);
+          display.setCursor(0, 20);
+          display.println("Level set to:");
+          display.setCursor(0, 36);
+          display.setTextSize(2);
+          display.println(selectedLevel);
+          display.display();
+          delay(1000);
+          return;
+        }
+      }
+    }
+    delay(10);
+  }
+}
+
+
+// =============================================================
 //  WiFi
 // =============================================================
 
@@ -319,10 +384,11 @@ bool fetchQuestion(Question& q) {
     return false;
   }
 
-  // Append both required query params.
+  // All three required query params: device identity, age band, and difficulty level.
   String url = String(API_BASE_URL)
     + "/api/next-question?device_code=" + DEVICE_CODE
-    + "&age_group=" + selectedAgeGroup;
+    + "&age_group=" + selectedAgeGroup
+    + "&level="     + String(selectedLevel);
 
   Serial.print("[fetch] GET ");
   Serial.println(url);

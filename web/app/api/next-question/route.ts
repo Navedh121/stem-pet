@@ -1,14 +1,16 @@
-// GET /api/next-question?device_code=XYZ&age_group=8-10
+// GET /api/next-question?device_code=XYZ&age_group=8-10&level=2
 //
 // Called by the ESP32 toy (and the browser simulator) to get the next question.
-// age_group is sent by the DEVICE each session — the child picks it on the
-// hardware, so each session can be a different band without re-linking.
+//
+// The DEVICE sends both age_group and level — the child picks both on the
+// hardware before play begins.  The server picks a RANDOM SKILL at the chosen
+// level, so every question is a mixed-skill surprise at a known difficulty.
 //
 // Flow:
-//   1. Validate device_code and age_group query params.
+//   1. Validate device_code, age_group, and level query params.
 //   2. Look up the device to find the linked child.
 //   3. Update the device's last_seen_at timestamp.
-//   4. Call getTargetDifficulty() → random skill + adaptive level for that skill.
+//   4. Pick a random skill (addition/subtraction/multiplication/division).
 //   5. Fetch the child's 15 most-recent question IDs (used to avoid repeats).
 //   6. Query cached questions for the chosen skill/level/age_group, EXCLUDING
 //      those recent IDs, then pick one at random.
@@ -17,14 +19,15 @@
 //      so variety grows over time while never returning an empty response.
 //   9. If the pool is also empty → builtin fallback questions.
 //
-// There is NO session cap — questions keep coming forever.  Difficulty
-// rises to level 4 per skill, then stays there indefinitely.
+// There is NO session cap — questions keep coming forever.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
-import { getTargetDifficulty } from "@/lib/adaptive";
 import { generateQuestion } from "@/lib/groq";
 import { isValidAgeGroup, type AgeGroup, type Skill, type Level } from "@/lib/types";
+
+// The four skills served at every level — randomised per question.
+const SKILLS: Skill[] = ["addition", "subtraction", "multiplication", "division"];
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -47,6 +50,17 @@ export async function GET(req: NextRequest) {
   }
 
   const ageGroup: AgeGroup = rawAgeGroup;
+
+  // level is chosen by the child on the device; server trusts and uses it directly.
+  const rawLevel  = searchParams.get("level");
+  const levelNum  = parseInt(rawLevel ?? "");
+  if (!rawLevel || isNaN(levelNum) || levelNum < 1 || levelNum > 4) {
+    return NextResponse.json(
+      { error: "Missing or invalid level. Must be 1, 2, 3, or 4." },
+      { status: 400 }
+    );
+  }
+  const level = levelNum as Level;
 
   const supabase = createServiceClient();
 
@@ -73,12 +87,12 @@ export async function GET(req: NextRequest) {
     .update({ last_seen_at: new Date().toISOString() })
     .eq("id", device.id);
 
-  // ── Step 4: Adaptive difficulty ──────────────────────────
-  // Picks a RANDOM skill, then computes the right level for it
-  // based on recent accuracy in that skill + age band.
-  // Each skill adapts independently — doing well at addition
-  // doesn't affect the multiplication level.
-  const { skill, level } = await getTargetDifficulty(childId, ageGroup, supabase);
+  // ── Step 4: Pick a random skill at the device-chosen level ──
+  // The level is fixed by the child's selection on boot.
+  // Skill is randomised here so every question is a mixed-skill
+  // surprise — addition, subtraction, multiplication, or division —
+  // all at the same difficulty the child asked for.
+  const skill: Skill = SKILLS[Math.floor(Math.random() * SKILLS.length)];
 
   // ── Step 5: Collect recent question IDs to skip ──────────
   // Fetching the last 15 attempted question_ids lets us exclude

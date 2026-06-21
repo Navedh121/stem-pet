@@ -9,52 +9,68 @@
 //  with the EXACT same request shapes, so you can verify the
 //  full question loop without flashing hardware.
 //
-//  What it does:
-//    1. You enter a device_code (must already be linked in the
-//       dashboard) and pick an age group.
-//    2. "Get question" → calls GET /api/next-question?device_code=…&age_group=…
-//    3. Clicking an option → calls POST /api/submit-answer with
-//       is_correct and the same age_group.
-//    4. After the result, a "Next question" button fetches the next one.
+//  Flow:
+//    1. Enter a device_code and pick an age group.
+//    2. Pick a difficulty level (1–4).
+//    3. Each question is a random skill at that level.
+//    4. "Next question" stays at the same level — no re-selecting.
+//    "← Change level" re-shows the level screen.
+//    "← Change device / age group" resets to the start.
 // ============================================================
 
 import { useState } from "react";
-import type { AgeGroup, NextQuestionResponse } from "@/lib/types";
+import type { AgeGroup, Level, NextQuestionResponse } from "@/lib/types";
 import { AGE_GROUPS } from "@/lib/types";
 
-type Phase = "setup" | "question" | "feedback";
+type Phase = "setup" | "level" | "question" | "feedback";
 
-// Friendly label for each option button.
 const OPTION_LABELS = ["A", "B", "C", "D"] as const;
+
+// Short descriptions shown on each level button.
+const LEVEL_DESCRIPTIONS: Record<number, string> = {
+  1: "Easy — small numbers",
+  2: "Medium — stepping up",
+  3: "Tricky — bigger numbers",
+  4: "Challenge — the hardest",
+};
 
 export default function SimulatorPage() {
   const [phase, setPhase] = useState<Phase>("setup");
 
-  // Setup form state.
+  // Setup state (device + age).
   const [deviceCode, setDeviceCode] = useState("");
-  const [ageGroup, setAgeGroup] = useState<AgeGroup>("8-10");
+  const [ageGroup, setAgeGroup]     = useState<AgeGroup>("8-10");
 
-  // Current question.
+  // Level chosen on the level screen — fixed for the session.
+  const [selectedLevel, setSelectedLevel] = useState<Level>(1);
+
+  // Current question returned from the API.
   const [question, setQuestion] = useState<NextQuestionResponse | null>(null);
 
-  // Feedback after an answer.
+  // Feedback after answering.
   const [feedback, setFeedback] = useState<{
     correct: boolean;
     selectedIndex: number;
   } | null>(null);
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]     = useState<string | null>(null);
 
   // ── Fetch a question from the real API ───────────────────
-  async function fetchQuestion() {
+  // The level param is passed explicitly so the level-selection buttons
+  // can update state AND call this in one step (state updates are async).
+  async function fetchQuestion(level: Level) {
     setLoading(true);
     setError(null);
 
-    const url = `/api/next-question?device_code=${encodeURIComponent(deviceCode.trim().toUpperCase())}&age_group=${encodeURIComponent(ageGroup)}`;
+    const url =
+      `/api/next-question` +
+      `?device_code=${encodeURIComponent(deviceCode.trim().toUpperCase())}` +
+      `&age_group=${encodeURIComponent(ageGroup)}` +
+      `&level=${level}`;
 
     try {
-      const res = await fetch(url);
+      const res  = await fetch(url);
       const json = await res.json();
 
       if (!res.ok) {
@@ -91,15 +107,30 @@ export default function SimulatorPage() {
         question_id:    question.question_id,
         selected_index: selectedIndex,
         is_correct:     isCorrect,
-        time_ms:        0,      // simulator doesn't track time
+        time_ms:        0,          // simulator doesn't track time
         age_group:      ageGroup,
       }),
     }).catch((err) => console.error("[simulator] submit error:", err));
   }
 
-  // ── Handle "Next question" ───────────────────────────────
+  // ── "Next question" — same level, new random skill ──────
   async function nextQuestion() {
-    await fetchQuestion();
+    await fetchQuestion(selectedLevel);
+  }
+
+  // ── Reset helpers ────────────────────────────────────────
+  function resetToSetup() {
+    setPhase("setup");
+    setQuestion(null);
+    setFeedback(null);
+    setError(null);
+  }
+
+  function resetToLevel() {
+    setPhase("level");
+    setQuestion(null);
+    setFeedback(null);
+    setError(null);
   }
 
   // ── Render ───────────────────────────────────────────────
@@ -115,9 +146,11 @@ export default function SimulatorPage() {
       </div>
 
       <div className="w-full max-w-md">
+
         {/* ── SETUP PHASE ─────────────────────────────── */}
         {phase === "setup" && (
           <div className="card p-6 space-y-5">
+            {/* Device code */}
             <div>
               <label htmlFor="device_code" className="block text-sm text-silk mb-1">
                 Device code
@@ -137,10 +170,9 @@ export default function SimulatorPage() {
               </p>
             </div>
 
+            {/* Age group */}
             <div>
-              <label htmlFor="age_group" className="block text-sm text-silk mb-1">
-                Age group
-              </label>
+              <label className="block text-sm text-silk mb-1">Age group</label>
               <div className="flex gap-2">
                 {AGE_GROUPS.map((g) => (
                   <button
@@ -162,13 +194,56 @@ export default function SimulatorPage() {
 
             {error && <p className="text-spider-red text-sm">{error}</p>}
 
+            {/* Continue — advance to level selection */}
             <button
               type="button"
-              disabled={!deviceCode.trim() || loading}
-              onClick={fetchQuestion}
+              disabled={!deviceCode.trim()}
+              onClick={() => { setError(null); setPhase("level"); }}
               className="w-full bg-spider-red hover:bg-spider-red/90 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
             >
-              {loading ? "Loading…" : "Get question →"}
+              Continue →
+            </button>
+          </div>
+        )}
+
+        {/* ── LEVEL PHASE ─────────────────────────────── */}
+        {phase === "level" && (
+          <div className="card p-6 space-y-5">
+            <div className="text-center">
+              <h2 className="font-display text-xl text-paper">Choose your level</h2>
+              <p className="text-muted text-sm mt-1">
+                Ages {ageGroup} · Questions mix all four skills at this level
+              </p>
+            </div>
+
+            {/* 4 level buttons — clicking one fetches immediately */}
+            <div className="grid grid-cols-2 gap-3">
+              {([1, 2, 3, 4] as Level[]).map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    setSelectedLevel(lvl);
+                    fetchQuestion(lvl);
+                  }}
+                  className="flex flex-col items-start gap-1 bg-surface border border-silk/15 hover:border-web-blue hover:bg-web-blue/5 px-4 py-4 rounded-xl transition-colors text-left disabled:opacity-50"
+                >
+                  <span className="font-display text-paper font-bold text-lg">Level {lvl}</span>
+                  <span className="text-muted text-xs">{LEVEL_DESCRIPTIONS[lvl]}</span>
+                </button>
+              ))}
+            </div>
+
+            {error  && <p className="text-spider-red text-sm">{error}</p>}
+            {loading && <p className="text-muted text-sm text-center">Loading question…</p>}
+
+            <button
+              type="button"
+              onClick={resetToSetup}
+              className="text-muted text-xs hover:text-silk transition-colors"
+            >
+              ← Change device / age group
             </button>
           </div>
         )}
@@ -209,13 +284,12 @@ export default function SimulatorPage() {
 
             {error && <p className="text-spider-red text-sm">{error}</p>}
 
-            {/* Back to setup */}
             <button
               type="button"
-              onClick={() => { setPhase("setup"); setQuestion(null); }}
+              onClick={resetToLevel}
               className="text-muted text-xs hover:text-silk transition-colors"
             >
-              ← Change device / age group
+              ← Change level
             </button>
           </div>
         )}
@@ -235,17 +309,18 @@ export default function SimulatorPage() {
               </p>
               {!feedback.correct && (
                 <p className="text-muted text-sm mt-1">
-                  Answer: <span className="text-paper font-medium">
+                  Answer:{" "}
+                  <span className="text-paper font-medium">
                     {question.options[question.correct_index]}
                   </span>
                 </p>
               )}
             </div>
 
-            {/* Show all options with highlights */}
+            {/* Options with highlights */}
             <div className="grid grid-cols-2 gap-3">
               {question.options.map((opt, i) => {
-                const isCorrect = i === question.correct_index;
+                const isCorrect  = i === question.correct_index;
                 const wasSelected = i === feedback.selectedIndex;
                 return (
                   <div
@@ -268,6 +343,7 @@ export default function SimulatorPage() {
 
             {error && <p className="text-spider-red text-sm">{error}</p>}
 
+            {/* Next question at same level */}
             <button
               type="button"
               disabled={loading}
@@ -277,15 +353,26 @@ export default function SimulatorPage() {
               {loading ? "Loading…" : "Next question →"}
             </button>
 
-            <button
-              type="button"
-              onClick={() => { setPhase("setup"); setQuestion(null); setFeedback(null); }}
-              className="w-full text-muted text-xs hover:text-silk transition-colors"
-            >
-              ← Change device / age group
-            </button>
+            {/* Navigation links */}
+            <div className="flex justify-center gap-6">
+              <button
+                type="button"
+                onClick={resetToLevel}
+                className="text-muted text-xs hover:text-silk transition-colors"
+              >
+                ← Change level
+              </button>
+              <button
+                type="button"
+                onClick={resetToSetup}
+                className="text-muted text-xs hover:text-silk transition-colors"
+              >
+                ← Change device / age group
+              </button>
+            </div>
           </div>
         )}
+
       </div>
     </div>
   );
