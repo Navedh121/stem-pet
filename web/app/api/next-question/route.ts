@@ -1,25 +1,31 @@
-// GET /api/next-question?device_code=XYZ
+// GET /api/next-question?device_code=XYZ&age_group=8-10
 //
 // Called by the ESP32 toy to get the next math question.
+// age_group is now sent by the DEVICE (not read from the child record),
+// because the child picks their age band on the hardware each session.
+//
 // Flow:
-//   1. Look up the device by device_code to find the linked child.
-//   2. Update the device's last_seen_at timestamp.
-//   3. Call getTargetDifficulty() to choose the right skill + level.
-//   4. Try to reuse a cached question from the DB at that difficulty.
-//   5. If no cached question, generate one via Groq and save it.
-//   6. Fall back to a builtin question if Groq fails.
-//   7. Return the question JSON.
+//   1. Validate device_code and age_group query params.
+//   2. Look up the device to find the linked child.
+//   3. Update the device's last_seen_at timestamp.
+//   4. Call getTargetDifficulty() — scoped to the given age_group.
+//   5. Try to reuse a cached question from the DB at that difficulty.
+//   6. If no cached question, generate one via Groq and save it.
+//   7. Fall back to a builtin question if Groq fails.
+//   8. Return the question JSON.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { getTargetDifficulty } from "@/lib/adaptive";
 import { generateQuestion } from "@/lib/groq";
-import type { AgeGroup, Skill, Level } from "@/lib/types";
+import { isValidAgeGroup, type AgeGroup, type Skill, type Level } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const deviceCode = searchParams.get("device_code");
+  const rawAgeGroup = searchParams.get("age_group");
 
+  // ── Validate query params ────────────────────────────────
   if (!deviceCode) {
     return NextResponse.json(
       { error: "Missing device_code query parameter" },
@@ -27,12 +33,23 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  if (!rawAgeGroup || !isValidAgeGroup(rawAgeGroup)) {
+    return NextResponse.json(
+      { error: "Missing or invalid age_group. Must be one of: 6-8, 8-10, 10-12" },
+      { status: 400 }
+    );
+  }
+
+  // age_group is valid from here on.
+  const ageGroup: AgeGroup = rawAgeGroup;
+
   const supabase = createServiceClient();
 
-  // ── Step 1: Look up the device + linked child ────────────
+  // ── Step 2: Look up the device + linked child ────────────
+  // We no longer need to join children for age_group — the device sends it.
   const { data: device, error: deviceErr } = await supabase
     .from("devices")
-    .select("id, child_id, children(id, age_group)")
+    .select("id, child_id")
     .eq("device_code", deviceCode)
     .single();
 
@@ -45,21 +62,20 @@ export async function GET(req: NextRequest) {
   }
 
   const childId: string = device.child_id;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ageGroup: AgeGroup = (device as any).children?.age_group ?? "8-10";
 
-  // ── Step 2: Update last_seen_at ──────────────────────────
+  // ── Step 3: Update last_seen_at ──────────────────────────
   await supabase
     .from("devices")
     .update({ last_seen_at: new Date().toISOString() })
     .eq("id", device.id);
 
-  // ── Step 3: Get adaptive difficulty ──────────────────────
-  const { skill, level } = await getTargetDifficulty(childId, supabase);
+  // ── Step 4: Get adaptive difficulty for THIS age band ────
+  // Progress is tracked independently per age group, so a child's
+  // 6-8 level is separate from their 10-12 level.
+  const { skill, level } = await getTargetDifficulty(childId, ageGroup, supabase);
 
-  // ── Step 4: Try cached question ──────────────────────────
+  // ── Step 5: Try cached question ──────────────────────────
   // Pick a random cached question for this skill/level/age_group.
-  // We use a random offset so children don't always see the same one.
   const { data: cachedQuestions } = await supabase
     .from("questions")
     .select("id, question_text, options, correct_index")
@@ -69,7 +85,6 @@ export async function GET(req: NextRequest) {
     .limit(20);
 
   if (cachedQuestions && cachedQuestions.length > 0) {
-    // Pick one at random so the child gets variety.
     const q = cachedQuestions[Math.floor(Math.random() * cachedQuestions.length)];
     return NextResponse.json({
       question_id:   q.id,
@@ -81,11 +96,10 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // ── Step 5: Generate via Groq ────────────────────────────
+  // ── Step 6: Generate via Groq ────────────────────────────
   const generated = await generateQuestion(skill as Skill, level as Level, ageGroup);
 
   if (generated) {
-    // Save to the questions table so future children can reuse it.
     const { data: saved, error: saveErr } = await supabase
       .from("questions")
       .insert({
@@ -102,7 +116,6 @@ export async function GET(req: NextRequest) {
 
     if (saveErr || !saved) {
       console.error("[next-question] Could not save generated question:", saveErr);
-      // Non-fatal — we can still return the question without a DB ID.
       return NextResponse.json({
         question_id:   "ephemeral-" + Date.now(),
         question_text: generated.question_text,
@@ -123,8 +136,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // ── Step 6: Absolute fallback — builtin question ─────────
-  // If both cache and Groq failed, grab any builtin question.
+  // ── Step 7: Absolute fallback — builtin question ─────────
   const { data: fallback } = await supabase
     .from("questions")
     .select("id, question_text, options, correct_index")
@@ -144,7 +156,6 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Shouldn't happen if seed.sql was run, but handle gracefully.
   console.error("[next-question] No questions available for", skill, level, ageGroup);
   return NextResponse.json(
     { error: "No questions available. Was seed.sql run in Supabase?" },

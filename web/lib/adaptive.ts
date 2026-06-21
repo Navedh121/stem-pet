@@ -2,8 +2,16 @@
 // Adaptive Difficulty Engine
 // ============================================================
 //
-// This module answers one question: "given a child's history,
-// what skill and level should their NEXT question be?"
+// This module answers one question: "given a child's history
+// FOR A SPECIFIC AGE BAND, what skill and level should their
+// NEXT question be?"
+//
+// Progress is tracked INDEPENDENTLY per age group — a child's
+// 6-8 level is separate from their 10-12 level.  This reflects
+// the fact that the child picks their age band on the device each
+// session, so older siblings (or the same child a year later) can
+// use the toy with an appropriate challenge level without
+// resetting anyone else's progress.
 //
 // The rules are intentionally simple and explainable — a key
 // talking point for portfolio / interview conversations:
@@ -11,7 +19,8 @@
 //   • Skills progress in order: addition → subtraction →
 //     multiplication → division.
 //   • Each skill has levels 1–4 (numbers get bigger each level).
-//   • Look at the child's last 10 attempts in their current skill:
+//   • Look at the child's last 10 attempts in their current skill
+//     AND their current age band:
 //       accuracy ≥ 80%  →  level up (or advance to next skill)
 //       accuracy ≤ 40%  →  level down (min level 1)
 //       otherwise       →  stay put
@@ -22,7 +31,7 @@
 // ============================================================
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { SKILL_ORDER, MAX_LEVEL, type Skill, type Level } from "./types";
+import { SKILL_ORDER, MAX_LEVEL, type Skill, type Level, type AgeGroup } from "./types";
 
 // What the engine returns — the chosen skill and level for the next question.
 export type Difficulty = {
@@ -38,32 +47,38 @@ const ADVANCE_THRESHOLD = 0.8;   // 80%+ correct → go harder
 const REGRESS_THRESHOLD = 0.4;   // 40%- correct → go easier
 
 /**
- * Determine the appropriate skill and level for a child's next question.
+ * Determine the appropriate skill and level for a child's next question
+ * within a specific age band.
  *
  * @param childId   UUID of the child row in the database.
+ * @param ageGroup  The age band chosen on the device this session.
+ *                  Only attempts recorded under THIS band are used —
+ *                  so each band has its own independent progress track.
  * @param supabase  A Supabase client (service-role recommended — no RLS issues).
  * @returns         The target { skill, level } for the next question.
  */
 export async function getTargetDifficulty(
   childId: string,
+  ageGroup: AgeGroup,
   supabase: SupabaseClient
 ): Promise<Difficulty> {
-  // Step 1: Figure out where the child currently is.
-  // We look at their most recent attempt to find their "current" skill.
-  // (In the future we could store this explicitly on the child row.)
-  const current = await getCurrentDifficulty(childId, supabase);
+  // Step 1: Figure out where the child currently is IN THIS AGE BAND.
+  // We look at their most recent attempt (filtered by age_group) to find
+  // their "current" skill.
+  const current = await getCurrentDifficulty(childId, ageGroup, supabase);
 
-  // Step 2: Fetch the last WINDOW_SIZE attempts in that skill.
+  // Step 2: Fetch the last WINDOW_SIZE attempts in that skill AND age band.
   const { data: attempts, error } = await supabase
     .from("attempts")
     .select("is_correct")
     .eq("child_id", childId)
     .eq("skill", current.skill)
+    .eq("age_group", ageGroup)   // ← only consider this age band
     .order("created_at", { ascending: false })
     .limit(WINDOW_SIZE);
 
   if (error || !attempts || attempts.length < WINDOW_SIZE) {
-    // Not enough data yet — stay at the current level.
+    // Not enough data yet in this band — stay at the current level.
     return current;
   }
 
@@ -84,23 +99,26 @@ export async function getTargetDifficulty(
 // ── Internal helpers ─────────────────────────────────────────
 
 /**
- * Find the child's current skill and level by looking at their most
- * recent attempt.  Falls back to addition / level 1 for new children.
+ * Find the child's current skill and level in a given age band by looking
+ * at their most recent attempt in that band.
+ * Falls back to addition / level 1 for new children (or a new age band).
  */
 async function getCurrentDifficulty(
   childId: string,
+  ageGroup: AgeGroup,
   supabase: SupabaseClient
 ): Promise<Difficulty> {
   const { data } = await supabase
     .from("attempts")
     .select("skill, level")
     .eq("child_id", childId)
+    .eq("age_group", ageGroup)   // ← only look at this band's history
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
 
   if (!data) {
-    // New child — start at the beginning.
+    // No history in this band — start at the beginning.
     return { skill: "addition", level: 1 };
   }
 

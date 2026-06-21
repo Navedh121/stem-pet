@@ -7,11 +7,13 @@
 // ── Database row types ───────────────────────────────────────
 
 // A child belonging to a parent.
+// age_group is now nullable — the child's band is chosen on the device each
+// session, so the children table no longer requires a fixed age group.
 export type Child = {
   id: string;
   parent_id: string;
   name: string;
-  age_group: AgeGroup;
+  age_group: AgeGroup | null;
   created_at: string;
 };
 
@@ -45,6 +47,9 @@ export type Attempt = {
   level: Level;
   is_correct: boolean;
   time_ms: number | null;
+  // The age band the child was playing under when this attempt was recorded.
+  // Null for legacy rows recorded before migration 0002.
+  age_group: AgeGroup | null;
   created_at: string;
 };
 
@@ -65,6 +70,10 @@ export const MAX_LEVEL = 4 as const;
 
 // Valid age groups.
 export type AgeGroup = "6-8" | "8-10" | "10-12";
+export const AGE_GROUPS: AgeGroup[] = ["6-8", "8-10", "10-12"];
+export function isValidAgeGroup(s: unknown): s is AgeGroup {
+  return AGE_GROUPS.includes(s as AgeGroup);
+}
 
 // The correct_index is always 0–3 (index into the options array).
 export type CorrectIndex = 0 | 1 | 2 | 3;
@@ -88,6 +97,7 @@ export type SubmitAnswerBody = {
   selected_index: number;
   is_correct: boolean;
   time_ms: number;
+  age_group: AgeGroup;  // the band chosen on the device this session
 };
 
 // ── Dashboard / analytics shapes ────────────────────────────

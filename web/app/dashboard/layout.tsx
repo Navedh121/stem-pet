@@ -46,7 +46,7 @@ export default async function DashboardLayout({
           </Link>
 
           {/* Child selector + actions */}
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto min-w-0">
             {kids.length > 0 ? (
               <ChildSelector kids={kids} />
             ) : (
@@ -72,7 +72,7 @@ export default async function DashboardLayout({
       </header>
 
       {/* ── Page content ─────────────────────────────────── */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {children}
       </main>
     </div>

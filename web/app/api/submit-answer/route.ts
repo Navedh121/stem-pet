@@ -10,12 +10,13 @@
 //   selected_index — 0–3, which button was pressed
 //   is_correct     — boolean (the toy already knows — it checked locally)
 //   time_ms        — how long the child took to answer (milliseconds)
+//   age_group      — "6-8" | "8-10" | "10-12" (chosen on the device this session)
 //
 // Returns: { ok: true } on success.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
-import type { SubmitAnswerBody, Skill, Level } from "@/lib/types";
+import { isValidAgeGroup, type SubmitAnswerBody, type Skill, type Level } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   let body: SubmitAnswerBody;
@@ -25,14 +26,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  // We trust the toy's is_correct value — it compared locally against the
-  // returned correct_index, so we don't need selected_index server-side.
-  const { device_code, question_id, is_correct, time_ms } = body;
+  const { device_code, question_id, is_correct, time_ms, age_group } = body;
 
   // ── Validate required fields ─────────────────────────────
   if (!device_code || typeof is_correct !== "boolean") {
     return NextResponse.json(
       { error: "device_code and is_correct are required" },
+      { status: 400 }
+    );
+  }
+
+  if (!isValidAgeGroup(age_group)) {
+    return NextResponse.json(
+      { error: "Missing or invalid age_group. Must be one of: 6-8, 8-10, 10-12" },
       { status: 400 }
     );
   }
@@ -78,12 +84,11 @@ export async function POST(req: NextRequest) {
   const { error: insertErr } = await supabase.from("attempts").insert({
     child_id:    device.child_id,
     question_id: questionId,
-    // If we couldn't look up the question, these will be null.
-    // That's okay — the dashboard handles nulls gracefully.
     skill:       skill ?? "addition",
     level:       level ?? 1,
     is_correct,
     time_ms:     typeof time_ms === "number" ? time_ms : null,
+    age_group,   // tag this attempt with the band chosen on the device
   });
 
   if (insertErr) {
