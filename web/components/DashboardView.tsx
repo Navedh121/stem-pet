@@ -112,29 +112,32 @@ export default function DashboardView({ childName, allAttempts }: Props) {
     [allAttempts, selectedBand]
   );
 
-  // Date windows for weekly stats (computed once per render, not reactive)
+  // Date windows for weekly stats — computed once, reused below.
   const weekAgo     = useMemo(() => { const d = new Date(); d.setDate(d.getDate() - 7);  return d; }, []);
   const twoWeeksAgo = useMemo(() => { const d = new Date(); d.setDate(d.getDate() - 14); return d; }, []);
 
-  const thisWeek = useMemo(
-    () => attempts.filter((a) => new Date(a.created_at) >= weekAgo),
-    [attempts, weekAgo]
+  // Stat cards use GLOBAL data (all bands) so they always show meaningful
+  // numbers regardless of which tab is selected.  The Web of Progress,
+  // chart, and activity table below are the per-band deep-dives.
+  const globalThisWeek = useMemo(
+    () => allAttempts.filter((a) => new Date(a.created_at) >= weekAgo),
+    [allAttempts, weekAgo]
   );
-  const lastWeek = useMemo(
-    () => attempts.filter(
+  const globalLastWeek = useMemo(
+    () => allAttempts.filter(
       (a) => new Date(a.created_at) >= twoWeeksAgo && new Date(a.created_at) < weekAgo
     ),
-    [attempts, twoWeeksAgo, weekAgo]
+    [allAttempts, twoWeeksAgo, weekAgo]
   );
 
   const stats: DashboardStats = useMemo(() => ({
-    currentStreak:    calcStreak(attempts),
-    totalQuestions:   attempts.length,
-    weeklyAccuracy:   pct(thisWeek),
-    weeklyTimeSec:    totalSec(thisWeek),
-    prevWeekAccuracy: pct(lastWeek),
-    prevWeekTimeSec:  totalSec(lastWeek),
-  }), [attempts, thisWeek, lastWeek]);
+    currentStreak:    calcStreak(allAttempts),
+    totalQuestions:   allAttempts.length,
+    weeklyAccuracy:   pct(globalThisWeek),
+    weeklyTimeSec:    totalSec(globalThisWeek),
+    prevWeekAccuracy: pct(globalLastWeek),
+    prevWeekTimeSec:  totalSec(globalLastWeek),
+  }), [allAttempts, globalThisWeek, globalLastWeek]);
 
   const skillMastery = useMemo(() => calcMastery(attempts), [attempts]);
   const chartData    = useMemo(() => buildChartData(attempts), [attempts]);
@@ -213,7 +216,8 @@ export default function DashboardView({ childName, allAttempts }: Props) {
         </div>
       )}
 
-      {/* ── Stat cards ──────────────────────────────────────── */}
+      {/* ── Stat cards (overall — all age groups) ───────────── */}
+      <p className="text-muted text-xs -mb-2">Overall · all age groups</p>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           label="Current streak"
