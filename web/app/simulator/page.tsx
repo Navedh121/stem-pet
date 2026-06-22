@@ -46,6 +46,13 @@ const PRAISE = [
 const SW = 640;   // screen width  (320 × 2)
 const SH = 480;   // screen height (240 × 2)
 
+// Natural outer dimensions of the whole device frame at scale 1.
+// Used by the responsive scale calculation below.
+// Width:  640 screen + 32 casing pad + 12 bezel pad + 4 bezel border + 4 casing border = 692
+// Height: 514 top-half (screen + bezel + top-pad) + 143 bottom-half (buttons + pad + border) = 657
+const DEVICE_NATURAL_W = 696;
+const DEVICE_NATURAL_H = 660;
+
 // CSS font-sizes that correspond to Adafruit GFX textSize N at 2× scale.
 // GFX default font: 6×8 px per char at textSize 1, so:
 //   textSize 1 → 8px × 2 = 16px  (we use 14 for visual balance)
@@ -80,7 +87,20 @@ export default function SimulatorPage() {
   const [praiseIdx,  setPraiseIdx]  = useState(0);
   const [loading,    setLoading]    = useState(false);
   const [apiError,   setApiError]   = useState<string | null>(null);
+  const [scale,      setScale]      = useState(1);   // viewport-responsive scale
   const startMs = useRef(0);  // when the question was displayed — for time_ms
+
+  // ── Responsive scale — shrink device to fit viewport width ─
+  useEffect(() => {
+    function calcScale() {
+      // 16 px total horizontal breathing room around the device
+      const available = window.innerWidth - 16;
+      setScale(Math.min(1, available / DEVICE_NATURAL_W));
+    }
+    calcScale();
+    window.addEventListener("resize", calcScale);
+    return () => window.removeEventListener("resize", calcScale);
+  }, []);
 
   // ── Real API call — identical URL shape to the firmware ───
   const fetchQuestion = useCallback(
@@ -384,16 +404,20 @@ export default function SimulatorPage() {
     }}>
 
       {/* Page header */}
-      <div style={{ textAlign: "center" }}>
+      <div style={{
+        textAlign: "center",
+        maxWidth: "min(90vw, 600px)",
+        padding: "0 12px",
+      }}>
         <h1 style={{
           color: "#FFFFFF", fontFamily: "sans-serif",
-          fontSize: 22, fontWeight: 700, margin: 0,
+          fontSize: "clamp(16px, 4.5vw, 22px)", fontWeight: 700, margin: 0,
         }}>
           STEMPet Simulator
         </h1>
         <p style={{
           color: "#555", fontFamily: "sans-serif",
-          fontSize: 13, margin: "4px 0 0",
+          fontSize: "clamp(11px, 3vw, 13px)", margin: "4px 0 0", lineHeight: 1.4,
         }}>
           Browser version of the physical toy · four buttons only ·
           practice sessions appear on the dashboard
@@ -402,7 +426,10 @@ export default function SimulatorPage() {
 
       {/* Device-code entry — only visible before power-on */}
       {!isPoweredOn && (
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{
+          display: "flex", gap: 10, alignItems: "center",
+          flexWrap: "wrap", justifyContent: "center", padding: "0 16px",
+        }}>
           <input
             type="text"
             value={deviceCode}
@@ -438,6 +465,22 @@ export default function SimulatorPage() {
       )}
 
       {/* ── THE DEVICE ──────────────────────────────────── */}
+      {/*
+        Responsive scaling: the outer div claims the scaled footprint in the
+        document flow; the inner div is the natural-size device transformed
+        from the top-left corner; overflow:hidden clips any sub-pixel excess.
+      */}
+      <div style={{
+        width: DEVICE_NATURAL_W * scale,
+        height: DEVICE_NATURAL_H * scale,
+        overflow: "hidden",
+        flexShrink: 0,
+      }}>
+      <div style={{
+        width: DEVICE_NATURAL_W,
+        transformOrigin: "top left",
+        transform: `scale(${scale})`,
+      }}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
 
         {/* Top casing + screen */}
@@ -497,7 +540,9 @@ export default function SimulatorPage() {
             />
           ))}
         </div>
-      </div>
+      </div>{/* end natural-size device */}
+      </div>{/* end scale transform */}
+      </div>{/* end scaling footprint wrapper */}
 
       {/* Restart / power-off controls outside the device frame */}
       {isPoweredOn && (
